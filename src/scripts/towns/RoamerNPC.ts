@@ -17,8 +17,16 @@ class RoamerNPC extends NPC {
 
         // If no roaming Pokemon yet
         if (!roamers.length) {
-            return `There hasn't been any reports of roaming Pokémon around ${GameConstants.camelCaseToString(GameConstants.Region[this.region])} lately.`;
+            const regionName = RoamingPokemonList.roamerGroups[this.region]?.[this.subRegionRoamerGroup]?.name
+                ?? GameConstants.camelCaseToString(GameConstants.Region[this.region]);
+            return `There haven't been any reports of roaming Pokémon around ${regionName} lately.`;
         }
+
+        roamers.forEach((roamer) => {
+            if (App.game.statistics.pokemonEncountered[roamer.pokemon.id]() === 0 && App.game.statistics.pokemonSeen[roamer.pokemon.id]() === 0) {
+                GameHelper.incrementObservable(App.game.statistics.pokemonSeen[roamer.pokemon.id]);
+            }
+        });
 
         const roamersHTML = roamers.map(r => `<img class="npc-roamer-image" src="assets/images/pokemon/${r.pokemon.id}.png" />`).join('');
 

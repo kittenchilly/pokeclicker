@@ -2,7 +2,7 @@ import * as GameConstants from '../GameConstants';
 import AchievementRequirement from './AchievementRequirement';
 
 export default class PokerusStatusRequirement extends AchievementRequirement {
-    constructor(pokemonRequired: number, private statusRequired: GameConstants.Pokerus) {
+    constructor(pokemonRequired: number, public statusRequired: GameConstants.Pokerus) {
         super(pokemonRequired, GameConstants.AchievementOption.more, GameConstants.AchievementType.Pokerus);
     }
 
@@ -12,5 +12,9 @@ export default class PokerusStatusRequirement extends AchievementRequirement {
 
     public hint(): string {
         return `${this.requiredValue} Pokémon needs to be infected.`;
+    }
+
+    public toString(): string {
+        return `${super.toString()} ${this.statusRequired}`;
     }
 }

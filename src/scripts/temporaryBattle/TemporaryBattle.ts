@@ -7,13 +7,17 @@ type TemporaryBattleOptionalArgument = {
     imageName?: string,
     visibleRequirement?: Requirement,
     hideTrainer?: boolean,
+    environment?: GameConstants.Environment,
+    resetDaily?: boolean
 };
 
 class TemporaryBattle extends TownContent {
     completeRequirements: (Requirement | OneFromManyRequirement)[];
 
     public cssClass(): string {
-        return 'btn btn-secondary';
+        return App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex(this.name)]() ?
+            'btn btn-success' :
+            'btn btn-secondary';
     }
     public text(): string {
         return `Fight ${this.getDisplayName()}`;
@@ -27,8 +31,8 @@ class TemporaryBattle extends TownContent {
     public areaStatus() {
         if (!this.isUnlocked()) {
             return areaStatus.locked;
-        } else if (App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex(this.name)]() == 0) {
-            return areaStatus.unlockedUnfinished;
+        } else if (App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex(this.name)]() == 0 && this.isVisible()) {
+            return areaStatus.incomplete;
         } else {
             return areaStatus.completed;
         }
@@ -46,12 +50,12 @@ class TemporaryBattle extends TownContent {
     }
     public getImage() {
         const imageName = this.optionalArgs?.imageName ?? this.name;
-        return `assets/images/temporaryBattle/${imageName}.png`;
+        return `assets/images/npcs/${imageName}.png`;
     }
 
     constructor(
         public name: string,
-        public pokemons: GymPokemon[],
+        private pokemons: GymPokemon[],
         public defeatMessage: string,
         requirements: Requirement[] = [],
         completeRequirements: Requirement[] = undefined,
@@ -65,5 +69,9 @@ class TemporaryBattle extends TownContent {
             optionalArgs.isTrainerBattle = true;
         }
         this.completeRequirements = completeRequirements;
+    }
+
+    public getPokemonList() {
+        return this.pokemons.filter((p) => p.requirements.every((r => r.isCompleted())));
     }
 }

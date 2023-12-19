@@ -19,11 +19,12 @@ class TemporaryBattleBattle extends Battle {
 
 
     public static defeatPokemon() {
-        if (!TemporaryBattleBattle.battle.optionalArgs.isTrainerBattle) {
+        const enemyPokemon = super.enemyPokemon();
+        if (!TemporaryBattleBattle.battle.optionalArgs.isTrainerBattle || enemyPokemon.shadow == GameConstants.ShadowStatus.Shadow) {
             // Attempting to catch Pokemon
-            const enemyPokemon = super.enemyPokemon();
             const isShiny: boolean = enemyPokemon.shiny;
-            const pokeBall: GameConstants.Pokeball = App.game.pokeballs.calculatePokeballToUse(enemyPokemon.id, isShiny);
+            const isShadow: boolean = enemyPokemon.shadow == GameConstants.ShadowStatus.Shadow;
+            const pokeBall: GameConstants.Pokeball = App.game.pokeballs.calculatePokeballToUse(enemyPokemon.id, isShiny, isShadow, enemyPokemon.encounterType);
             if (pokeBall !== GameConstants.Pokeball.None) {
                 this.prepareCatch(enemyPokemon, pokeBall);
                 setTimeout(
@@ -42,7 +43,7 @@ class TemporaryBattleBattle extends Battle {
     }
 
     private static endFight() {
-        if (TemporaryBattleBattle.index() >= TemporaryBattleBattle.battle.pokemons.length) {
+        if (TemporaryBattleBattle.index() >= TemporaryBattleBattle.battle.getPokemonList().length) {
             TemporaryBattleRunner.battleWon(TemporaryBattleBattle.battle);
         } else {
             TemporaryBattleBattle.generateNewEnemy();
@@ -52,7 +53,7 @@ class TemporaryBattleBattle extends Battle {
 
         TemporaryBattleBattle.index(TemporaryBattleBattle.index() + 1);
 
-        if (TemporaryBattleBattle.index() >= TemporaryBattleBattle.battle.pokemons.length) {
+        if (TemporaryBattleBattle.index() >= TemporaryBattleBattle.battle.getPokemonList().length) {
             TemporaryBattleRunner.battleWon(TemporaryBattleBattle.battle);
         } else {
             TemporaryBattleBattle.generateNewEnemy();

@@ -1,7 +1,7 @@
 
 <!-- ko if: App.game.gameState === GameConstants.GameState.battleFrontier -->
 <div id="battleFrontierInformation" class="card sortable-disabled border-secondary mb-3 battle-frontier no-select">
-    <div class="card-header p-0">
+    <div class="card-header p-0" data-toggle="collapse" href="#battleFrontierRewards">
         <span>Battle Frontier</span>
     </div>
     <!-- ko ifnot: BattleFrontierRunner.started -->
@@ -22,7 +22,7 @@
     </div>
     <!-- /ko -->
     <!-- ko if: BattleFrontierRunner.started -->
-    <div class="card-body text-center p-0">
+    <div id="battleFrontierRewards" class="card-body text-center p-0 show">
         <table class="table table-hover table-striped table-bordered table-sm m-0">
             <thead>
                 <tr>
@@ -38,7 +38,7 @@
                     <th class="tight" data-bind="text: $data.stage"></td>
                     <td class="text-left">
                         <img width="28px" data-bind="attr:{ src: $data.image }" />
-                        <knockout data-bind="text: $data.description"></knockout>
+                        <knockout data-bind="text: $data.displayName"></knockout>
                     </td>
                 </tr>
             </tbody>

@@ -7,7 +7,7 @@ import OakItemType from '../enums/OakItemType';
 import OakItemLoadout from './OakItemLoadout';
 
 export default class OakItemLoadouts implements Saveable {
-    private static MAX_SLOTS = 3;
+    private static MAX_SLOTS = 5;
 
     saveKey = 'oakItemLoadouts';
 
@@ -51,16 +51,16 @@ export default class OakItemLoadouts implements Saveable {
         return this.loadouts[this.selectedLoadout()];
     }
 
-    fromJSON(json: Array<{name: string, loadout: Array<number>}>) {
+    fromJSON(json: Array<{ name: string, loadout: Array<number> }>) {
         json?.forEach((loadout, index) => {
-            this.loadouts[index] = new OakItemLoadout(decodeURI(loadout.name), loadout.loadout);
+            this.loadouts[index] = new OakItemLoadout(loadout.name, loadout.loadout);
         });
     }
 
     toJSON() {
         return ko.toJS(this.loadouts.map((loadout) => ({
             ...loadout,
-            name: encodeURI(loadout.name()),
+            name: loadout.name(),
         })));
     }
 }

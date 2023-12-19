@@ -1,4 +1,3 @@
-///<reference path="PokemonList.ts"/>
 ///<reference path="../GameConstants.d.ts"/>
 
 enum PokemonLocationType {
@@ -16,209 +15,58 @@ enum PokemonLocationType {
     BattleFrontier,
     Wandering,
     Discord,
+    QuestLineReward,
+    TempBattleReward,
+    GymReward,
+    DungeonReward,
+    Trade,
+    GiftNPC,
+    ShadowPokemon,
+    DreamOrb,
+    BattleCafe,
+    SafariItem
 }
 
-class PokemonHelper {
-
-    public static getPokemonsWithEvolution(evoType: GameConstants.StoneType): PartyPokemon[] {
-        return App.game.party.caughtPokemon.filter((partyPokemon: PartyPokemon) => {
-            if (!partyPokemon.evolutions) {
-                return false;
-            }
-            for (const evolution of partyPokemon.evolutions) {
-                if (evolution instanceof StoneEvolution && evolution.stone == evoType && evolution.isSatisfied() && PokemonHelper.calcNativeRegion(evolution.getEvolvedPokemon()) <= player.highestRegion()) {
-                    return true;
-                }
-            }
-            return false;
-        }).sort((a, b) => a.id - b.id);
-    }
-
-    public static getEvolution(id: number, evoType: GameConstants.StoneType): string {
-        const pokemon = App.game.party.getPokemon(id);
-        if (pokemon) {
-            for (const evolution of pokemon.evolutions) {
-                if (evolution instanceof StoneEvolution && evolution.stone == evoType) {
-                    return evolution.getEvolvedPokemon();
-                }
-            }
-        }
-        return '';
-    }
-
-    public static getPokemonById(id: number): DataPokemon {
-        return this.getPokemonByName(pokemonMap[id].name);
-    }
-
-    public static getPokemonByName(name: PokemonNameType): DataPokemon {
-        const basePokemon = pokemonMap[name];
-        if (!basePokemon) {
-            console.warn('Could not find pokemon', name);
-            return;
-        }
-
-        const type1 = basePokemon.type[0];
-        const type2: PokemonType = basePokemon.type[1] ?? PokemonType.None;
-
-        const eggCycles: number = basePokemon.eggCycles || 20;
-        return new DataPokemon(basePokemon.id, basePokemon.name, basePokemon.catchRate, basePokemon.evolutions, type1, type2, basePokemon.attack, basePokemon.base.hitpoints, basePokemon.levelType, basePokemon.exp, eggCycles, basePokemon.heldItem, basePokemon.gender);
-    }
-
-    public static typeStringToId(id: string) {
-        return PokemonType[id];
-    }
-
-    public static typeIdToString(id: number) {
-        return PokemonType[id];
-    }
-
-    public static getImage(pokemonId: number, shiny: boolean = undefined, gender: boolean = undefined): string {
-        let src = 'assets/images/';
-        if (shiny === undefined) {
-            shiny = App.game.party.alreadyCaughtPokemon(pokemonId, true);
-        }
-        if (gender === undefined) {
-            gender = App.game.party.getPokemon(pokemonId)?.defaultFemaleSprite() ?? false;
-        }
-
-        if (shiny) {
-            src += 'shiny';
-        }
-        let genderString = '';
-        // If Pokémon is female, use the female sprite, otherwise use the male/genderless one
-        const hasDiff = this.getPokemonById(pokemonId).gender.visualDifference;
-        if (hasDiff) {
-            if (gender) {
-                genderString = '-f';
-            }
-        }
-        src += `pokemon/${pokemonId}${genderString}.png`;
-        return src;
-    }
-
-    public static getPokeballImage(pokemonName: PokemonNameType): string {
-        let src = '';
-        if (App.game.party.alreadyCaughtPokemon(PokemonHelper.getPokemonByName(pokemonName).id)) {
-            src = 'assets/images/pokeball/Pokeball-';
-            if (App.game.party.alreadyCaughtPokemon(PokemonHelper.getPokemonByName(pokemonName).id, true)) {
-                src += 'shiny-';
-            }
-            src += 'small.png';
-        }
-        return src;
-    }
-
-
-    public static calcNativeRegion(pokemonName: PokemonNameType) {
-        const pokemon = pokemonMap[pokemonName];
-        if (pokemon.nativeRegion != undefined) {
-            return pokemon.nativeRegion;
-        }
-        const id = pokemon.id;
-        const region = GameConstants.MaxIDPerRegion.findIndex(maxRegionID => maxRegionID >= Math.floor(id));
-        return region >= 0 ? region : GameConstants.Region.none;
-    }
-
-    public static calcUniquePokemonsByRegion(region: GameConstants.Region) {
-        return new Set(pokemonList.filter(p => p.id > 0 && PokemonHelper.calcNativeRegion(p.name) === region).map(p => Math.floor(p.id))).size;
-    }
-
-    // To have encounter/caught/defeat/hatch statistics in a single place
-    public static incrementPokemonStatistics(pokemonId: number, statistic: string, shiny: boolean, gender: number) {
-        const pokemonStatistics = {
-            'Captured': App.game.statistics.pokemonCaptured[pokemonId],
-            'Defeated': App.game.statistics.pokemonDefeated[pokemonId],
-            'Encountered': App.game.statistics.pokemonEncountered[pokemonId],
-            'Hatched': App.game.statistics.pokemonHatched[pokemonId],
-            'MaleCaptured': App.game.statistics.malePokemonCaptured[pokemonId],
-            'MaleDefeated': App.game.statistics.malePokemonDefeated[pokemonId],
-            'MaleEncountered': App.game.statistics.malePokemonEncountered[pokemonId],
-            'MaleHatched': App.game.statistics.malePokemonHatched[pokemonId],
-            'FemaleCaptured': App.game.statistics.femalePokemonCaptured[pokemonId],
-            'FemaleDefeated': App.game.statistics.femalePokemonDefeated[pokemonId],
-            'FemaleEncountered': App.game.statistics.femalePokemonEncountered[pokemonId],
-            'FemaleHatched': App.game.statistics.femalePokemonHatched[pokemonId],
-            'ShinyCaptured': App.game.statistics.shinyPokemonCaptured[pokemonId],
-            'ShinyDefeated': App.game.statistics.shinyPokemonDefeated[pokemonId],
-            'ShinyEncountered': App.game.statistics.shinyPokemonEncountered[pokemonId],
-            'ShinyHatched': App.game.statistics.shinyPokemonHatched[pokemonId],
-            'ShinyMaleCaptured': App.game.statistics.shinyMalePokemonCaptured[pokemonId],
-            'ShinyMaleDefeated': App.game.statistics.shinyMalePokemonDefeated[pokemonId],
-            'ShinyMaleEncountered': App.game.statistics.shinyMalePokemonEncountered[pokemonId],
-            'ShinyMaleHatched': App.game.statistics.shinyMalePokemonHatched[pokemonId],
-            'ShinyFemaleCaptured': App.game.statistics.shinyFemalePokemonCaptured[pokemonId],
-            'ShinyFemaleDefeated': App.game.statistics.shinyFemalePokemonDefeated[pokemonId],
-            'ShinyFemaleEncountered': App.game.statistics.shinyFemalePokemonEncountered[pokemonId],
-            'ShinyFemaleHatched': App.game.statistics.shinyFemalePokemonHatched[pokemonId],
-        };
-        const totalStatistics = {
-            'Captured': App.game.statistics.totalPokemonCaptured,
-            'Defeated': App.game.statistics.totalPokemonDefeated,
-            'Encountered': App.game.statistics.totalPokemonEncountered,
-            'Hatched': App.game.statistics.totalPokemonHatched,
-            'MaleCaptured': App.game.statistics.totalMalePokemonCaptured,
-            'MaleDefeated': App.game.statistics.totalMalePokemonDefeated,
-            'MaleEncountered': App.game.statistics.totalMalePokemonEncountered,
-            'MaleHatched': App.game.statistics.totalMalePokemonHatched,
-            'FemaleCaptured': App.game.statistics.totalFemalePokemonCaptured,
-            'FemaleDefeated': App.game.statistics.totalFemalePokemonDefeated,
-            'FemaleEncountered': App.game.statistics.totalFemalePokemonEncountered,
-            'FemaleHatched': App.game.statistics.totalFemalePokemonHatched,
-            'GenderlessCaptured': App.game.statistics.totalGenderlessPokemonCaptured,
-            'GenderlessDefeated': App.game.statistics.totalGenderlessPokemonDefeated,
-            'GenderlessEncountered': App.game.statistics.totalGenderlessPokemonEncountered,
-            'GenderlessHatched': App.game.statistics.totalGenderlessPokemonHatched,
-            'ShinyCaptured': App.game.statistics.totalShinyPokemonCaptured,
-            'ShinyDefeated': App.game.statistics.totalShinyPokemonDefeated,
-            'ShinyEncountered': App.game.statistics.totalShinyPokemonEncountered,
-            'ShinyHatched': App.game.statistics.totalShinyPokemonHatched,
-            'ShinyMaleCaptured': App.game.statistics.totalShinyMalePokemonCaptured,
-            'ShinyMaleDefeated': App.game.statistics.totalShinyMalePokemonDefeated,
-            'ShinyMaleEncountered': App.game.statistics.totalShinyMalePokemonEncountered,
-            'ShinyMaleHatched': App.game.statistics.totalShinyMalePokemonHatched,
-            'ShinyFemaleCaptured': App.game.statistics.totalShinyFemalePokemonCaptured,
-            'ShinyFemaleDefeated': App.game.statistics.totalShinyFemalePokemonDefeated,
-            'ShinyFemaleEncountered': App.game.statistics.totalShinyFemalePokemonEncountered,
-            'ShinyFemaleHatched': App.game.statistics.totalShinyFemalePokemonHatched,
-            'ShinyGenderlessCaptured': App.game.statistics.totalShinyGenderlessPokemonCaptured,
-            'ShinyGenderlessDefeated': App.game.statistics.totalShinyGenderlessPokemonDefeated,
-            'ShinyGenderlessEncountered': App.game.statistics.totalShinyGenderlessPokemonEncountered,
-            'ShinyGenderlessHatched': App.game.statistics.totalShinyGenderlessPokemonHatched,
-        };
-        let genderString = '';
-        // Gender Statistics
-        if (gender === GameConstants.BattlePokemonGender.Male) {
-            genderString = 'Male';
-        } else if (gender === GameConstants.BattlePokemonGender.Female) {
-            genderString = 'Female';
-        } else if (gender === GameConstants.BattlePokemonGender.NoGender) {
-            genderString = 'Genderless';
-        }
-        GameHelper.incrementObservable(pokemonStatistics[statistic]);
-        GameHelper.incrementObservable(totalStatistics[statistic]);
-        // Gender
-        if (gender != GameConstants.BattlePokemonGender.NoGender) {
-            GameHelper.incrementObservable(pokemonStatistics[genderString + statistic]);
-        }
-        GameHelper.incrementObservable(totalStatistics[genderString + statistic]);
-        if (shiny) {
-            const shinyString = 'Shiny';
-            GameHelper.incrementObservable(pokemonStatistics[shinyString + statistic]);
-            GameHelper.incrementObservable(totalStatistics[shinyString + statistic]);
-            // Gender
-            if (gender != GameConstants.BattlePokemonGender.NoGender) {
-                GameHelper.incrementObservable(pokemonStatistics[shinyString + genderString + statistic]);
-            }
-            GameHelper.incrementObservable(totalStatistics[shinyString + genderString + statistic]);
-        }
-    }
-
+class PokemonHelper extends TmpPokemonHelper {
     /*
     PRETTY MUCH ONLY USED BY THE BOT BELOW
     */
+    private static readonly pokemonHelperCache = {};
+    private static readonly pokemonNames: string[] = pokemonList.map(p => p.name);
 
-    public static getPokemonRegionRoutes(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none) {
-        const regionRoutes = {};
+    private static getCache<T>(cacheName: string) {
+        let cache: {[name: string]: T} = this.pokemonHelperCache[cacheName];
+        if (!cache) {
+            this.pokemonHelperCache[cacheName] = cache = {};
+        }
+        return cache;
+    }
+
+    // RegionalCache is an array of caches, allowing the results from different maxRegions to co-exist
+    private static getRegionalCache<T>(cacheName: string) {
+        let cache: {[name: string]: T}[] = this.pokemonHelperCache[cacheName];
+        if (!cache) {
+            this.pokemonHelperCache[cacheName] = cache = [];
+        }
+        return cache;
+    }
+
+    private static initRegionalCacheLine<T>(cache, maxRegion: GameConstants.Region, defaultValue: { new(): T; }): {[name: string]: T} {
+        const cacheLine = cache[maxRegion] = {};
+        return this.initCacheLine(cacheLine, defaultValue);
+    }
+
+    private static initCacheLine<T>(cacheLine, defaultValue: { new(): T; }): {[name: string]: T} {
+        this.pokemonNames.forEach(name => cacheLine[name] = new defaultValue());
+        return cacheLine;
+    }
+
+    public static getPokemonRegionRoutes(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): {[name: string]: Array<object>} {
+        const cache = this.getRegionalCache<{[name: string]: Array<object>}>(this.getPokemonRegionRoutes.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Object);
         Routes.regionRoutes.forEach(routeData => {
             const region = routeData.region;
             // If we only want to check up to a maximum region
@@ -226,28 +74,35 @@ class PokemonHelper {
                 return false;
             }
             Object.entries(routeData.pokemon).forEach(([encounterType, pokemon]) => {
-                if (Object.values(pokemon).flat().includes(pokemonName)) {
-                    if (!regionRoutes[region]) {
-                        regionRoutes[region] = [];
+                new Set(Object.values(pokemon).flat()).forEach((name: any) => {
+                    if (name instanceof SpecialRoutePokemon) {
+                        return false;
                     }
-                    regionRoutes[region].push({ route: routeData.number });
-                }
+                    if (!cacheLine[name][region]) {
+                        cacheLine[name][region] = new Array<object>;
+                    }
+                    cacheLine[name][region].push({ route: routeData.number });
+                });
             });
             routeData.pokemon.special?.forEach(special => {
-                if (special.pokemon.includes(pokemonName)) {
-                    if (!regionRoutes[region]) {
-                        regionRoutes[region] = [];
+                special.pokemon.forEach((name: string) => {
+                    if (!cacheLine[name][region]) {
+                        cacheLine[name][region] = new Array<object>;
                     }
-                    regionRoutes[region].push({ route: routeData.number, requirements: special.req.hint() });
-                }
+                    cacheLine[name][region].push({ route: routeData.number, requirements: special.req.hint() });
+                });
             });
             return true;
         });
-        return regionRoutes;
+        return cacheLine[pokemonName] as {[name: string]: Array<object>};
     }
 
-    public static getPokemonDungeons(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<string> {
-        const dungeons = [];
+    public static getPokemonDungeons(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<object> {
+        const cache = this.getRegionalCache<object[]>(this.getPokemonDungeons.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<object>);
         Object.entries(dungeonList).forEach(([dungeonName, dungeon]) => {
             // If we only want to check up to a maximum region
             if (maxRegion != GameConstants.Region.none) {
@@ -257,15 +112,31 @@ class PokemonHelper {
                 }
             }
             // Dungeon Grunt
-            if (dungeon.pokemonList.includes(pokemonName)) {
-                dungeons.push(dungeonName);
-            }
+            dungeon.enemyList.forEach((enemy) => {
+                // Skip trainers
+                if (enemy instanceof DungeonTrainer) {
+                    return;
+                }
+
+                if (typeof enemy === 'string') {
+                    cacheLine[enemy].push({ dungeon: dungeonName });
+                } else if (enemy.hasOwnProperty('pokemon')) {
+                    cacheLine[(<DetailedPokemon>enemy).pokemon].push({
+                        dungeon: dungeonName,
+                        requirements: enemy?.options?.requirement?.hint(),
+                    });
+                }
+            });
         });
-        return dungeons;
+        return cacheLine[pokemonName];
     }
 
-    public static getPokemonBossDungeons(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<string> {
-        const dungeons = [];
+    public static getPokemonBossDungeons(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<object> {
+        const cache = this.getRegionalCache<object[]>(this.getPokemonBossDungeons.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<object>);
         Object.entries(dungeonList).forEach(([dungeonName, dungeon]) => {
             // If we only want to check up to a maximum region
             if (maxRegion != GameConstants.Region.none) {
@@ -275,20 +146,23 @@ class PokemonHelper {
                 }
             }
             // Dungeon Boss
-            const boss = dungeon.availableBosses(false, true).find(boss => boss.name == pokemonName);
-            if (boss) {
+            dungeon.availableBosses(false, true).forEach(boss => {
                 const data = {
                     dungeon: dungeonName,
                     requirements: boss.options?.requirement?.hint(),
                 };
-                dungeons.push(data);
-            }
+                cacheLine[boss.name].push(data);
+            });
         });
-        return dungeons;
+        return cacheLine[pokemonName];
     }
 
-    public static getPokemonChestDungeons(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<string> {
-        const dungeons = [];
+    public static getPokemonChestDungeons(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<object> {
+        const cache = this.getRegionalCache<object[]>(this.getPokemonChestDungeons.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<object>);
         Object.entries(dungeonList).forEach(([dungeonName, dungeon]) => {
             // If we only want to check up to a maximum region
             if (maxRegion != GameConstants.Region.none) {
@@ -299,36 +173,66 @@ class PokemonHelper {
             }
             // Dungeon Chest
             Object.values(dungeon.lootTable).flat().forEach(i => {
-                if (i.loot == pokemonName) {
+                if (this.pokemonNames.includes(i.loot)) {
                     const data = {
                         dungeon: dungeonName,
                         requirements: i.requirement?.hint(),
                     };
-                    dungeons.push(data);
+                    cacheLine[i.loot].push(data);
                 }
             });
         });
-        return dungeons;
+        return cacheLine[pokemonName];
+    }
+
+    public static getShadowPokemonDungeons(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<string> {
+        const cache = this.getRegionalCache<string[]>(this.getShadowPokemonDungeons.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<string>);
+        Object.entries(dungeonList).forEach(([dungeonName, dungeon]) => {
+            // If we only want to check up to a maximum region
+            if (maxRegion != GameConstants.Region.none) {
+                const region = GameConstants.RegionDungeons.findIndex(d => d.includes(dungeonName));
+                if (region > maxRegion) {
+                    return false;
+                }
+            }
+            // Shadow Pokemon
+            new Set(dungeon.allAvailableShadowPokemon()).forEach(pokemon => {
+                cacheLine[pokemon].push(dungeonName);
+            });
+        });
+        return cacheLine[pokemonName];
     }
 
     public static getPokemonEggs(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<string> {
-        const eggTypes = [];
+        const cache = this.getRegionalCache<string[]>(this.getPokemonEggs.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<string>);
         Object.entries(App.game.breeding.hatchList).forEach(([eggType, eggArr]) => {
             eggArr.forEach((pokemonArr, region) => {
                 // If we only want to check up to a maximum region
                 if (maxRegion != GameConstants.Region.none && region > maxRegion)  {
                     return false;
                 }
-                if (pokemonArr.includes(pokemonName)) {
-                    eggTypes.push(EggType[eggType]);
-                }
+                pokemonArr.forEach(name => {
+                    cacheLine[name].push(EggType[eggType]);
+                });
             });
         });
-        return eggTypes;
+        return cacheLine[pokemonName];
     }
 
     public static getPokemonShops(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<string> {
-        const shops = [];
+        const cache = this.getRegionalCache<string[]>(this.getPokemonShops.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<string>);
         Object.entries(TownList).forEach(([townName, town]) => {
             // Check if the shop has items
             const townShops = town.content.filter(c => c instanceof Shop && c.items);
@@ -338,126 +242,390 @@ class PokemonHelper {
                 if (maxRegion != GameConstants.Region.none && region > maxRegion) {
                     return false;
                 }
-                const hasPokemon = townShops.find(ts => (ts as Shop).items?.find(item => item.name == pokemonName));
-                if (hasPokemon) {
-                    shops.push(townName);
-                }
+                townShops.find(ts => (ts as Shop).items?.forEach(item => {
+                    if (this.pokemonNames.includes(item.name)) {
+                        cacheLine[item.name].push(townName);
+                    }
+                }));
             }
         });
-        return shops;
+        return cacheLine[pokemonName];
     }
 
-    public static getPokemonRoamingRegions(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<string> {
-        const regions = [];
+    public static getPokemonRoamingRegions(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<object> {
+        const cache = this.getRegionalCache<object[]>(this.getPokemonRoamingRegions.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<object>);
         Object.entries(RoamingPokemonList.list).forEach(([region, regionArr]) => {
             if (maxRegion != GameConstants.Region.none && (+region) > maxRegion) {
                 return false;
             }
-            const pokemon = regionArr.flat().find(r => r.pokemon.name == pokemonName);
-            if (pokemon) {
-                const data = {
-                    region: +region,
-                    requirements: pokemon.unlockRequirement?.hint(),
-                };
-                regions.push(data);
-            }
+            RoamingPokemonList.roamerGroups[region].forEach((group, i) => {
+                regionArr[i]?.forEach(r => {
+                    if (this.pokemonNames.includes(r.pokemon.name)) {
+                        const data = {
+                            region: +region,
+                            requirements: r.unlockRequirement?.hint(),
+                            roamingGroup: group,
+                        };
+                        cacheLine[r.pokemon.name].push(data);
+                    }
+                });
+            });
         });
-        return regions;
+        return cacheLine[pokemonName];
     }
 
     public static getPokemonParents(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<string> {
-        const parents = [];
+        const cache = this.getRegionalCache<string[]>(this.getPokemonParents.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<string>);
         Object.entries(pokemonBabyPrevolutionMap).forEach(([parent, baby]) => {
-            if (baby == pokemonName) {
-                if (maxRegion != GameConstants.Region.none && pokemonMap[parent].nativeRegion > maxRegion) {
-                    return false;
-                }
-                parents.push(parent);
+            if (maxRegion != GameConstants.Region.none && pokemonMap[parent].nativeRegion > maxRegion) {
+                return false;
             }
+            cacheLine[baby].push(parent);
         });
-        return parents;
+        return cacheLine[pokemonName];
     }
 
-    public static getPokemonFossils(pokemonName: PokemonNameType): Array<string> {
-        const fossils = [];
+    public static getPokemonFossils(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<string> {
+        const cache = this.getRegionalCache<string[]>(this.getPokemonFossils.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<string>);
         Object.entries(GameConstants.FossilToPokemon).forEach(([fossil, pokemon]) => {
-            if (pokemon == pokemonName) {
-                fossils.push(fossil);
-            }
+            cacheLine[pokemon].push(fossil);
         });
-        return fossils;
+        return cacheLine[pokemonName];
     }
 
-    public static getPokemonSafariChance(pokemonName: PokemonNameType): number {
-        const safariWeight = SafariPokemon.list.reduce((sum, p) => sum += p.weight, 0);
-        const safariPokemon = SafariPokemon.list.find(p => p.name == pokemonName);
-        return safariPokemon ? +((SafariPokemon.calcPokemonWeight(safariPokemon) / safariWeight) * 100).toFixed(2) : 0;
-    }
-
-    public static getPokemonPrevolution(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<Evolution> {
-        const evolutions = [];
-        const prevolutionPokemon = pokemonList.filter((p: PokemonListData) => p.evolutions?.find(e => e.getEvolvedPokemon() == pokemonName));
-        prevolutionPokemon.forEach((p: PokemonListData) => p.evolutions.forEach(e => {
-            if (e.getEvolvedPokemon() == pokemonName) {
-                if (maxRegion != GameConstants.Region.none && p.nativeRegion > maxRegion) {
-                    return false;
-                }
-                evolutions.push(e);
+    public static getPokemonSafariChance(pokemonName: PokemonNameType): Record<GameConstants.Region, Record<number, number>> {
+        const cache = this.getCache<Record<GameConstants.Region, Record<number, number>>>(this.getPokemonSafariChance.name);
+        if (cache[pokemonName]) {
+            return cache[pokemonName];
+        }
+        const cacheLine = this.initCacheLine(cache, Object);
+        Object.entries(SafariPokemonList.list).forEach(([region]) => {
+            if (region == GameConstants.Region.kalos.toString()) {
+                // Friendly safari might cause infinite recursion
+                return;
             }
+            const zoneList = SafariPokemonList.list[region]();
+            const safariWeight = zoneList.reduce((sum, p) => sum += p.weight, 0);
+            zoneList.forEach(safariPokemon => {
+                cacheLine[safariPokemon.name][+region] = cacheLine[safariPokemon.name][+region] || {};
+                cacheLine[safariPokemon.name][+region][0] = +((SafariPokemon.calcPokemonWeight(safariPokemon) / safariWeight) * 100).toFixed(2);
+            });
+        });
+        return cacheLine[pokemonName] as Record<GameConstants.Region, Record<number, number>>;
+    }
+
+    public static getPokemonPrevolution(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<EvoData> {
+        const cache = this.getRegionalCache<EvoData[]>(this.getPokemonPrevolution.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<EvoData>);
+        const prevolutionPokemon = pokemonList.filter((p: PokemonListData) => p.evolutions);
+        prevolutionPokemon.forEach((p: PokemonListData) => p.evolutions.forEach(e => {
+            // ignore dummy evolutions
+            if (e.trigger === EvoTrigger.NONE) {
+                return false;
+            }
+            if (maxRegion != GameConstants.Region.none && p.nativeRegion > maxRegion) {
+                return false;
+            }
+            cacheLine[e.evolvedPokemon].push(e);
         }));
-        return evolutions;
+        return cacheLine[pokemonName];
     }
 
-    public static getPokemonLevelPrevolution(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Evolution {
-        const evolutionPokemon = pokemonList.find((p: PokemonListData) => p.evolutions?.find(e => e.type.includes(EvolutionType.Level) && e.getEvolvedPokemon() == pokemonName));
+    public static getPokemonLevelPrevolution(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): EvoData {
+        const evolutionPokemon = pokemonList.find((p: PokemonListData) => p.evolutions?.find(e => e.trigger === EvoTrigger.LEVEL && e.evolvedPokemon == pokemonName));
         if (maxRegion != GameConstants.Region.none && pokemonMap[evolutionPokemon.name].nativeRegion > maxRegion) {
             return;
         }
-        return (evolutionPokemon as PokemonListData)?.evolutions?.find(e => e.getEvolvedPokemon() == pokemonName);
+        return (evolutionPokemon as PokemonListData)?.evolutions?.find(e => e.evolvedPokemon == pokemonName);
     }
 
-    public static getPokemonStonePrevolution(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Evolution {
-        const evolutionPokemon = pokemonList.find((p: PokemonListData) => p.evolutions?.find(e => e.type.includes(EvolutionType.Stone) && e.getEvolvedPokemon() == pokemonName));
+    public static getPokemonStonePrevolution(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): EvoData {
+        const evolutionPokemon = pokemonList.find((p: PokemonListData) => p.evolutions?.find(e => e.trigger === EvoTrigger.STONE && e.evolvedPokemon == pokemonName));
         if (maxRegion != GameConstants.Region.none && pokemonMap[evolutionPokemon.name].nativeRegion > maxRegion) {
             return;
         }
-        return (evolutionPokemon as PokemonListData)?.evolutions?.find(e => e.getEvolvedPokemon() == pokemonName);
+        return (evolutionPokemon as PokemonListData)?.evolutions?.find(e => e.evolvedPokemon == pokemonName);
     }
 
     public static getPokemonBattleFrontier(pokemonName: PokemonNameType): Array<number> {
-        const stages = [];
+        const cache = this.getCache<number[]>(this.getPokemonBattleFrontier.name);
+        if (cache[pokemonName]) {
+            return cache[pokemonName];
+        }
+        const cacheLine = this.initCacheLine(cache, Array<number>);
+        pokemonList.forEach(p => cacheLine[p.name] = []);
         BattleFrontierMilestones.milestoneRewards.filter(m => m instanceof BattleFrontierMilestonePokemon).forEach(milestone => {
-            if (milestone._description == pokemonName) {
-                stages.push(milestone.stage);
+            if (this.pokemonNames.includes(milestone._description)) {
+                cacheLine[milestone._description].push(milestone.stage);
             }
         });
-        return stages;
+        return cacheLine[pokemonName];
     }
 
     public static getPokemonWandering(pokemonName: PokemonNameType): Array<string> {
-        const berries = [];
-        if (Berry.baseWander.includes(pokemonName)) {
-            return ['Always'];
+        const cache = this.getCache<string[]>(this.getPokemonWandering.name);
+        if (cache[pokemonName]) {
+            return cache[pokemonName];
         }
-        App.game.farming.berryData.forEach((berry) => {
-            if (berry.wander.includes(pokemonName)) {
-                berries.push(BerryType[berry.type]);
-            }
+        const cacheLine = this.initCacheLine(cache, Array<string>);
+        Berry.baseWander.forEach(pokemon => {
+            cacheLine[pokemon] = ['Always'];
         });
-        return berries;
+        App.game.farming.berryData.forEach((berry) => {
+            berry.wander.forEach(pokemon => {
+                if (cacheLine[pokemon][0] !== 'Always') {
+                    cacheLine[pokemon].push(BerryType[berry.type]);
+                }
+            });
+        });
+        return cacheLine[pokemonName];
     }
 
     public static getPokemonDiscord(pokemonName: PokemonNameType): Array<number> {
-        const codes = [];
+        const cache = this.getCache<number[]>(this.getPokemonDiscord.name);
+        if (cache[pokemonName]) {
+            return cache[pokemonName];
+        }
+        const cacheLine = this.initCacheLine(cache, Array<number>);
         App.game.discord.codes.forEach(code => {
-            if (code.name == pokemonName) {
-                codes.push(code.price);
+            if (this.pokemonNames.includes(code.name)) {
+                cacheLine[code.name].push(code.price);
             }
         });
-        return codes;
+        return cacheLine[pokemonName];
     }
 
-    public static getPokemonLocations = (pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none) => {
+    public static getPokemonTempBattleReward(pokemonName: PokemonNameType): Array<string> {
+        const cache = this.getCache<string[]>(this.getPokemonTempBattleReward.name);
+        if (cache[pokemonName]) {
+            return cache[pokemonName];
+        }
+        const cacheLine = this.initCacheLine(cache, Array<string>);
+
+        Object.entries(TemporaryBattleList).forEach(tempBattle => {
+            const firstTimeRewardFunction = tempBattle[1].optionalArgs?.firstTimeRewardFunction?.toString();
+            this.getPokemonRewards(firstTimeRewardFunction).forEach(pokemon => {
+                cacheLine[pokemon].push(tempBattle[0]);
+            });
+            const rewardFunction = tempBattle[1].optionalArgs?.rewardFunction?.toString();
+            this.getPokemonRewards(rewardFunction).forEach(pokemon => {
+                cacheLine[pokemon].push(tempBattle[0]);
+            });
+
+            if (tempBattle[1].optionalArgs?.isTrainerBattle === false) {
+                tempBattle[1].getPokemonList().forEach(p => {
+                    cacheLine[p.name].push(tempBattle[0]);
+                });
+            }
+        });
+        return cacheLine[pokemonName];
+    }
+
+    public static getPokemonGymReward(pokemonName: PokemonNameType): Array<string> {
+        const cache = this.getCache<string[]>(this.getPokemonGymReward.name);
+        if (cache[pokemonName]) {
+            return cache[pokemonName];
+        }
+        const cacheLine = this.initCacheLine(cache, Array<string>);
+        Object.values(GymList).forEach(gym => {
+            const rewardFunction = gym.rewardFunction?.toString();
+            this.getPokemonRewards(rewardFunction).forEach(pokemon => {
+                cacheLine[pokemon].push(gym.leaderName);
+            });
+        });
+        return cacheLine[pokemonName];
+    }
+
+    public static getPokemonDungeonReward(pokemonName: PokemonNameType): Array<string> {
+        const cache = this.getCache<string[]>(this.getPokemonDungeonReward.name);
+        if (cache[pokemonName]) {
+            return cache[pokemonName];
+        }
+        const cacheLine = this.initCacheLine(cache, Array<string>);
+        Object.values(dungeonList).forEach(dungeon => {
+            const rewardFunction = dungeon.rewardFunction?.toString();
+            this.getPokemonRewards(rewardFunction).forEach(pokemon => {
+                cacheLine[pokemon].push(dungeon.name);
+            });
+        });
+        return cacheLine[pokemonName];
+    }
+
+    public static getPokemonQuestLineReward(pokemonName: PokemonNameType): Array<string> {
+        const cache = this.getCache<string[]>(this.getPokemonQuestLineReward.name);
+        if (cache[pokemonName]) {
+            return cache[pokemonName];
+        }
+        const cacheLine = this.initCacheLine(cache, Array<string>);
+        App.game.quests.questLines().forEach(questLine => questLine.quests().forEach(quest => {
+            const rewardFunction = (quest as any).customReward?.toString();
+            this.getPokemonRewards(rewardFunction).forEach(pokemon => {
+                cacheLine[pokemon].push(questLine.name);
+            });
+        }));
+        return cacheLine[pokemonName];
+    }
+
+    public static getPokemonTrades(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<string> {
+        const cache = this.getRegionalCache<string[]>(this.getPokemonTrades.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<string>);
+        Object.entries(TownList).forEach(([townName, town]) => {
+            // If we only want to check up to a maximum region
+            if (maxRegion != GameConstants.Region.none && town.region > maxRegion) {
+                return false;
+            }
+
+            const townShops = town.content.filter(c => c instanceof Shop);
+            if (townShops.length) {
+                const townTrades = {};
+                for (let i = 0; i < townShops.length; i++) {
+                    const shop = townShops[i];
+                    let deals;
+                    if (shop instanceof GemMasterShop) {
+                        deals = GemDeal.list[shop.shop]?.();
+                    } else if (shop instanceof ShardTraderShop) {
+                        deals = ShardDeal.list[shop.location]?.();
+                    } else if (shop instanceof BerryMasterShop) {
+                        deals = BerryDeal.list[shop.location]?.();
+                    }
+                    deals?.forEach(deal => {
+                        if (this.pokemonNames.includes(deal.item.itemType.type)) {
+                            townTrades[deal.item.itemType.type] = true;
+                        }
+                    });
+                }
+                Object.keys(townTrades).forEach(pokemon => {
+                    cacheLine[pokemon].push(townName);
+                });
+            }
+        });
+        return cacheLine[pokemonName];
+    }
+
+    public static getPokemonGifts(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<object> {
+        const cache = this.getRegionalCache<object[]>(this.getPokemonGifts.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<object>);
+        Object.entries(TownList).forEach(([townName, town]) => {
+            // If we only want to check up to a maximum region
+            if (maxRegion != GameConstants.Region.none && town.region > maxRegion) {
+                return false;
+            }
+
+            const npcs = town.npcs?.filter(n => n instanceof GiftNPC);
+            npcs?.forEach(npc => {
+                const rewardFunction = (npc as GiftNPC).giftFunction?.toString();
+                this.getPokemonRewards(rewardFunction).forEach(pokemon => {
+                    cacheLine[pokemon].push({
+                        town: townName,
+                        npc: npc.name,
+                        requirements: npc.options?.requirement?.hint(),
+                    });
+                });
+            });
+        });
+        return cacheLine[pokemonName];
+    }
+
+    public static getPokemonDreamOrbs(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Array<string> {
+        const cache = this.getRegionalCache<string[]>(this.getPokemonDreamOrbs.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Array<string>);
+        // Dream orbs are unavailable before Unova
+        if (maxRegion !== GameConstants.Region.none && maxRegion < GameConstants.Region.unova) {
+            return cacheLine[pokemonName];
+        }
+        App.game.dreamOrbController.orbs.forEach(orb => orb.items.forEach(dreamOrbLoot => {
+            if (dreamOrbLoot.item.type === ItemType.item) {
+                const item = ItemList[dreamOrbLoot.item.id];
+                if (item instanceof PokemonItem && this.pokemonNames.includes(item.type)) {
+                    cacheLine[item.type].push(orb.color);
+                }
+            }
+        }));
+        return cacheLine[pokemonName];
+    }
+
+    public static getBattleCafeCombination(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): {spin?: GameConstants.AlcremieSpins, sweet?: GameConstants.AlcremieSweet} {
+        const cache = this.getRegionalCache<object>(this.getBattleCafeCombination.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Object);
+        if (maxRegion !== GameConstants.Region.none && maxRegion < GameConstants.Region.galar) {
+            return cacheLine[pokemonName];
+        }
+        cacheLine['Milcery (Cheesy)'] = {spin: GameConstants.AlcremieSpins.Any3600};
+        let sweet: GameConstants.AlcremieSpins, spin: GameConstants.AlcremieSweet;
+        for (sweet of GameHelper.enumNumbers(GameConstants.AlcremieSweet)) {
+            for (spin of GameHelper.enumNumbers(GameConstants.AlcremieSpins)) {
+                const spinReward = BattleCafeController.evolutions[sweet][spin]?.name;
+                if (this.pokemonNames.includes(spinReward)) {
+                    cacheLine[spinReward] = {spin: spin, sweet: sweet};
+                }
+            }
+        }
+        return cacheLine[pokemonName];
+    }
+
+    public static getPokemonSafariItem(pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.Region.none): Record<GameConstants.Region, {chance: number, requirement?: string }> {
+        const cache = this.getRegionalCache<Record<GameConstants.Region, {chance: number, requirement?: string }>>(this.getPokemonSafariItem.name);
+        if (cache[maxRegion]) {
+            return cache[maxRegion][pokemonName];
+        }
+        const cacheLine = this.initRegionalCacheLine(cache, maxRegion, Object);
+        Object.entries(SafariItemController.list).forEach(([region, list]) => {
+            if (maxRegion !== GameConstants.Region.none && maxRegion < Number(region)) {
+                return;
+            }
+            list.forEach(item => {
+                const pokemonItem = item.item.id as string;
+                if (this.pokemonNames.includes(pokemonItem)) {
+                    cacheLine[pokemonItem][region] = {chance : item.weight / list.reduce((acc, it) => acc + it.weight, 0)};
+                    if (item.requirement) {
+                        cacheLine[pokemonItem][region].requirement = item.requirement.hint();
+                    }
+                }
+            });
+        });
+        return cacheLine[pokemonName] as Record<GameConstants.Region, {chance: number, requirement?: string }>;
+    }
+
+    private static getPokemonRewards(rewardFunction: string) {
+        // Example reward function: App.game.party.gainPokemonByName('Eevee')
+        const pokemonRewardRegex = /gainPokemonByName\('(.+?)'/g;
+        const rewards = [];
+        let match;
+        while ((match = pokemonRewardRegex.exec(rewardFunction)) != null) {
+            // match[1] is the contents of the capture group, e.g. "Eevee"
+            rewards.push(match[1]);
+        }
+        return rewards;
+    }
+
+    public static getPokemonLocations = (pokemonName: PokemonNameType, maxRegion: GameConstants.Region = GameConstants.MAX_AVAILABLE_REGION) => {
         const encounterTypes = {};
         // Routes
         const regionRoutes = PokemonHelper.getPokemonRegionRoutes(pokemonName, maxRegion);
@@ -478,6 +646,11 @@ class PokemonHelper {
         const chestDungeons = PokemonHelper.getPokemonChestDungeons(pokemonName, maxRegion);
         if (chestDungeons.length) {
             encounterTypes[PokemonLocationType.DungeonChest] = chestDungeons;
+        }
+        // Shadow Pokemon
+        const shadowPokemon = PokemonHelper.getShadowPokemonDungeons(pokemonName, maxRegion);
+        if (shadowPokemon.length) {
+            encounterTypes[PokemonLocationType.ShadowPokemon] = shadowPokemon;
         }
         // Eggs
         const eggs = PokemonHelper.getPokemonEggs(pokemonName, maxRegion);
@@ -506,8 +679,8 @@ class PokemonHelper {
         }
         // Safari
         const safariChance = PokemonHelper.getPokemonSafariChance(pokemonName);
-        if (safariChance) {
-            encounterTypes[PokemonLocationType.Safari] = `${safariChance}%`;
+        if (Object.keys(safariChance).length) {
+            encounterTypes[PokemonLocationType.Safari] = safariChance;
         }
         // Evolution
         const evolutions = PokemonHelper.getPokemonPrevolution(pokemonName, maxRegion);
@@ -527,13 +700,90 @@ class PokemonHelper {
             encounterTypes[PokemonLocationType.Wandering] = wandering;
         }
 
-        // Wandering
+        // Discord
         const discord = PokemonHelper.getPokemonDiscord(pokemonName);
         if (discord.length) {
             encounterTypes[PokemonLocationType.Discord] = discord;
         }
 
+        // Temp battle reward
+        const tempBattle = PokemonHelper.getPokemonTempBattleReward(pokemonName);
+        if (tempBattle.length) {
+            encounterTypes[PokemonLocationType.TempBattleReward] = tempBattle;
+        }
+
+        // Gym reward
+        const gymReward = PokemonHelper.getPokemonGymReward(pokemonName);
+        if (gymReward.length) {
+            encounterTypes[PokemonLocationType.GymReward] = gymReward;
+        }
+
+        // Dungeon reward
+        const dungeonReward = PokemonHelper.getPokemonDungeonReward(pokemonName);
+        if (dungeonReward.length) {
+            encounterTypes[PokemonLocationType.DungeonReward] = dungeonReward;
+        }
+
+        // Quest Line reward
+        const questLineReward = PokemonHelper.getPokemonQuestLineReward(pokemonName);
+        if (questLineReward.length) {
+            encounterTypes[PokemonLocationType.QuestLineReward] = questLineReward;
+        }
+
+        // Trades
+        const trades = PokemonHelper.getPokemonTrades(pokemonName, maxRegion);
+        if (trades.length) {
+            encounterTypes[PokemonLocationType.Trade] = trades;
+        }
+
+        // Gift NPC
+        const gifts = PokemonHelper.getPokemonGifts(pokemonName, maxRegion);
+        if (gifts.length) {
+            encounterTypes[PokemonLocationType.GiftNPC] = gifts;
+        }
+
+        // Dream Orbs
+        const dreamOrbs = PokemonHelper.getPokemonDreamOrbs(pokemonName, maxRegion);
+        if (dreamOrbs.length) {
+            encounterTypes[PokemonLocationType.DreamOrb] = dreamOrbs;
+        }
+
+        // Battle Café
+        const combination = PokemonHelper.getBattleCafeCombination(pokemonName, maxRegion);
+        if (Object.keys(combination).length) {
+            encounterTypes[PokemonLocationType.BattleCafe] = combination;
+        }
+
+        // Safari Items
+        const safariItems = PokemonHelper.getPokemonSafariItem(pokemonName, maxRegion);
+        if (Object.keys(safariItems).length) {
+            encounterTypes[PokemonLocationType.SafariItem] = safariItems;
+        }
+
         // Return the list of items
         return encounterTypes;
+    }
+
+    public static isObtainableAndNotEvable = (pokemonName: PokemonNameType) => {
+        const locations = PokemonHelper.getPokemonLocations(pokemonName);
+        const isEvable = locations[PokemonLocationType.Dungeon] ||
+            locations[PokemonLocationType.DungeonBoss] ||
+            locations[PokemonLocationType.DungeonChest] ||
+            (locations[PokemonLocationType.Evolution] as EvoData[])?.some((evo) => evo.trigger === EvoTrigger.STONE) || // Only stone evolutions gives EVs
+            locations[PokemonLocationType.Roaming] ||
+            locations[PokemonLocationType.Route] ||
+            locations[PokemonLocationType.Safari] ||
+            locations[PokemonLocationType.Shop] ||
+            locations[PokemonLocationType.Wandering] ||
+            locations[PokemonLocationType.Trade] ||
+            locations[PokemonLocationType.ShadowPokemon] ||
+            locations[PokemonLocationType.DreamOrb] ||
+            locations[PokemonLocationType.BattleCafe] ||
+            locations[PokemonLocationType.SafariItem];
+        return !isEvable && Object.keys(locations).length;
+    };
+
+    public static isMegaEvolution(pokemonName: PokemonNameType): boolean {
+        return PokemonHelper.getPokemonPrevolution(pokemonName).some((e) => e.evolvedPokemon == pokemonName && e.restrictions.some((r) => r instanceof MegaEvolveRequirement));
     }
 }

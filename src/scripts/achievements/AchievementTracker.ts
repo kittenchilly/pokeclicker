@@ -22,6 +22,25 @@ class AchievementTracker implements Feature {
     update(delta: number): void {
     }
 
+    nextAchievement(): void {
+        if (!this.hasTrackedAchievement()) {
+            return;
+        }
+        const tracked = this.trackedAchievement();
+        let next = tracked;
+        let max = Infinity;
+        // Grabs the next tier achievement with the same custom signature.
+        AchievementHandler.achievementList.forEach((current) => {
+            if (`${tracked.property}` === `${current.property}` && tracked.property.requiredValue < current.property.requiredValue && current.property.requiredValue < max) {
+                next = current;
+                max = current.property.requiredValue;
+            }
+        });
+        if (tracked !== next) {
+            this.trackAchievement(next);
+        }
+    }
+
     fromJSON(json: Record<string, any>): void {
         if (json == null) {
             return;

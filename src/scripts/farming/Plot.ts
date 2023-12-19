@@ -22,6 +22,10 @@ class Plot implements Saveable {
 
     formattedStageTimeLeft: KnockoutComputed<string>;
     formattedTimeLeft: KnockoutComputed<string>;
+    calcFormattedStageTimeLeft: (includeGrowthMultiplier: boolean) => string;
+    calcFormattedTimeLeft: (includeGrowthMultiplier: boolean) => string;
+    formattedBaseStageTimeLeft: KnockoutComputed<string>;
+    formattedBaseTimeLeft: KnockoutComputed<string>;
     formattedMulchTimeLeft: KnockoutComputed<string>;
     formattedAuras: KnockoutComputed<string>;
 
@@ -30,6 +34,7 @@ class Plot implements Saveable {
     auraMutation: KnockoutComputed<number>;
     auraReplant: KnockoutComputed<number>;
     auraDeath: KnockoutComputed<number>;
+    auraDecay: KnockoutComputed<number>;
     auraBoost: KnockoutComputed<number>;
 
     isEmpty: KnockoutComputed<boolean>;
@@ -67,32 +72,52 @@ class Plot implements Saveable {
 
                 const boost = this.auraBoost();
                 const value = this.berryData.aura.getAuraValue(this.stage());
-                return value > 1 ? value * boost : value / boost;
+                return value > 1 || this.berry === BerryType.Micle ? value * boost : value / boost;
             }).extend({ rateLimit: 50 }),
         };
 
-        this.formattedStageTimeLeft = ko.pureComputed(() => {
+        this.calcFormattedStageTimeLeft = ((includeGrowthMultiplier: boolean) => {
             if (this.berry === BerryType.None) {
                 return '';
             }
             const growthTime = this.berryData.growthTime.find(t => this.age < t);
-            const timeLeft = Math.ceil(growthTime - this.age);
-            const growthMultiplier = App.game.farming.getGrowthMultiplier() * this.getGrowthMultiplier();
-            return GameConstants.formatTime(timeLeft / growthMultiplier);
+            const timeLeft = growthTime - this.age;
+            const growthMultiplier = includeGrowthMultiplier
+                ? App.game.farming.getGrowthMultiplier() * this.getGrowthMultiplier()
+                : 1;
+            return GameConstants.formatTime(Math.ceil(timeLeft / growthMultiplier));
         });
 
-        this.formattedTimeLeft = ko.pureComputed(() => {
+        this.formattedStageTimeLeft = ko.pureComputed(() => {
+            return this.calcFormattedStageTimeLeft(true);
+        });
+
+        this.formattedBaseStageTimeLeft = ko.pureComputed(() => {
+            return this.calcFormattedStageTimeLeft(false);
+        });
+
+        this.calcFormattedTimeLeft = ((includeGrowthMultiplier: boolean) => {
             if (this.berry === BerryType.None) {
                 return '';
             }
             let timeLeft = 0;
             if (this.age < this.berryData.growthTime[3]) {
-                timeLeft = Math.ceil(this.berryData.growthTime[3] - this.age);
+                timeLeft = this.berryData.growthTime[3] - this.age;
             } else {
-                timeLeft = Math.ceil(this.berryData.growthTime[4] - this.age);
+                timeLeft = this.berryData.growthTime[4] - this.age;
             }
-            const growthMultiplier = App.game.farming.getGrowthMultiplier() * this.getGrowthMultiplier();
-            return GameConstants.formatTime(timeLeft / growthMultiplier);
+            const growthMultiplier = includeGrowthMultiplier
+                ? App.game.farming.getGrowthMultiplier() * this.getGrowthMultiplier()
+                : 1;
+            return GameConstants.formatTime(Math.ceil(timeLeft / growthMultiplier));
+        });
+
+        this.formattedTimeLeft = ko.pureComputed(() => {
+            return this.calcFormattedTimeLeft(true);
+        });
+
+        this.formattedBaseTimeLeft = ko.pureComputed(() => {
+            return this.calcFormattedTimeLeft(false);
         });
 
         this.formattedMulchTimeLeft = ko.pureComputed(() => {
@@ -117,6 +142,9 @@ class Plot implements Saveable {
         this.auraDeath = ko.pureComputed(() => {
             return this.berry === BerryType.Kasib ? 1 : this.maxNeighbourAura(AuraType.Death);
         });
+        this.auraDecay = ko.pureComputed(() => {
+            return this.multiplyNeighbourAura(AuraType.Decay);
+        });
         this.auraBoost = ko.pureComputed(() => {
             return this.berry === BerryType.Lum ? 1 : this.maxNeighbourAura(AuraType.Boost);
         });
@@ -124,27 +152,31 @@ class Plot implements Saveable {
         this.formattedAuras = ko.pureComputed(() => {
             const auraStr = [];
             if (this.auraGrowth() !== 1) {
-                auraStr.push(`Growth: ${this.auraGrowth().toFixed(2)}x`);
+                auraStr.push(`Growth: ×${this.auraGrowth().toFixed(2)}`);
             }
 
             if (this.auraHarvest() !== 1) {
-                auraStr.push(`Harvest: ${this.auraHarvest().toFixed(2)}x`);
+                auraStr.push(`Harvest: ×${this.auraHarvest().toFixed(2)}`);
             }
 
             if (this.auraMutation() !== 1) {
-                auraStr.push(`Mutation: ${this.auraMutation().toFixed(2)}x`);
+                auraStr.push(`Mutation: ×${this.auraMutation().toFixed(2)}`);
             }
 
             if (this.auraReplant() !== 1) {
-                auraStr.push(`Replant: ${this.auraReplant().toFixed(2)}x`);
+                auraStr.push(`Replant: ×${this.auraReplant().toFixed(2)}`);
             }
 
             if (this.auraDeath() !== 1) {
-                auraStr.push(`Death: ${this.auraDeath().toFixed(2)}x`);
+                auraStr.push(`Death: ×${this.auraDeath().toFixed(2)}`);
+            }
+
+            if (this.auraDecay() !== 1) {
+                auraStr.push(`Decay: ×${this.auraDecay().toFixed(2)}`);
             }
 
             if (this.auraBoost() !== 1) {
-                auraStr.push(`Boost: ${this.auraBoost().toFixed(2)}x`);
+                auraStr.push(`Boost: ×${this.auraBoost().toFixed(2)}`);
             }
             return auraStr.join('<br/>');
         });
@@ -174,39 +206,50 @@ class Plot implements Saveable {
                 // Normal Time
                 } else {
                     const timeType = Settings.getSetting('farmDisplay').observableValue();
+                    const timeBoostType = Settings.getSetting('farmBoostDisplay').observableValue();
+                    const growthMultiplierNumber = App.game.farming.getGrowthMultiplier() * this.getGrowthMultiplier();
+                    const altered = growthMultiplierNumber !== 1;
+
+                    let timetip: string;
+                    let formattedBaseTime: string;
+
                     if (timeType === 'nextStage') {
                         const formattedTime = this.formattedStageTimeLeft();
+                        formattedBaseTime = this.formattedBaseStageTimeLeft();
                         switch (this.stage()) {
                             case PlotStage.Seed:
-                                tooltip.push(`${formattedTime} until sprout`);
+                                timetip = `${formattedTime} until sprout`;
                                 break;
                             case PlotStage.Sprout:
-                                tooltip.push(`${formattedTime} until grown`);
+                                timetip = `${formattedTime} until grown`;
                                 break;
                             case PlotStage.Taller:
-                                tooltip.push(`${formattedTime} until bloom`);
+                                timetip = `${formattedTime} until bloom`;
                                 break;
                             case PlotStage.Bloom:
-                                tooltip.push(`${formattedTime} until ripe`);
+                                timetip = `${formattedTime} until ripe`;
                                 break;
                             case PlotStage.Berry:
-                                tooltip.push(`${formattedTime} until death`);
+                                timetip = `${formattedTime} until death`;
                                 break;
                         }
                     } else {
                         const formattedTime = this.formattedTimeLeft();
+                        formattedBaseTime = this.formattedBaseTimeLeft();
                         switch (this.stage()) {
                             case PlotStage.Seed:
                             case PlotStage.Sprout:
                             case PlotStage.Taller:
                             case PlotStage.Bloom:
-                                tooltip.push(`${formattedTime} until ripe`);
+                                timetip = `${formattedTime} until ripe`;
                                 break;
                             case PlotStage.Berry:
-                                tooltip.push(`${formattedTime} until death`);
+                                timetip = `${formattedTime} until death`;
                                 break;
                         }
                     }
+
+                    tooltip.push(`${timetip}${altered && timeBoostType ? ` (altered from ${formattedBaseTime})` : ''}`);
                 }
             }
 
@@ -214,7 +257,7 @@ class Plot implements Saveable {
 
             if (this.emittingAura.type() !== null) {
                 tooltip.push('<u>Aura Emitted:</u>');
-                tooltip.push(`${AuraType[this.emittingAura.type()]}: ${this.emittingAura.value().toFixed(2)}x`);
+                tooltip.push(`${AuraType[this.emittingAura.type()]}: ${this.berry === BerryType.Micle ? `+${this.emittingAura.value().toLocaleString('en-US', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `×${this.emittingAura.value().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}`);
             }
             const auraStr = this.formattedAuras();
             if (auraStr) {
@@ -331,7 +374,7 @@ class Plot implements Saveable {
             }
 
             // Check if berry replants itself
-            const replantChance = this.berryData.replantRate * App.game.farming.getReplantMultiplier() * this.getReplantMultiplier();
+            const replantChance = Math.min(1, this.berryData.replantRate * App.game.farming.getReplantMultiplier() * this.getReplantMultiplier());
             if (Rand.chance(replantChance)) {
                 this.age = 0;
                 this.notifications.push(FarmNotificationType.Replanted);
@@ -367,7 +410,7 @@ class Plot implements Saveable {
             return undefined;
         }
         // Chance to generate wandering Pokemon
-        if (Rand.chance(GameConstants.WANDER_RATE * App.game.farming.externalAuras[AuraType.Attract]())) {
+        if (Rand.chance(GameConstants.WANDER_RATE * App.game.farming.externalAuras[AuraType.Attract]() * (1 - App.game.farming.externalAuras[AuraType.Repel]()))) {
             // Get a random Pokemon from the list of possible encounters
             const availablePokemon: PokemonNameType[] = this.berryData.wander.filter(pokemon => PokemonHelper.calcNativeRegion(pokemon) <= player.highestRegion());
             const wanderPokemon = Rand.fromArray(availablePokemon);
@@ -375,16 +418,25 @@ class Plot implements Saveable {
             const shiny = PokemonFactory.generateShiny(GameConstants.SHINY_CHANCE_FARM);
 
             // Add to log book
+            const pokemon = wanderPokemon;
             if (shiny) {
-                App.game.logbook.newLog(LogBookTypes.SHINY, `A shiny ${wanderPokemon} has wandered onto the farm! ${App.game.party.alreadyCaughtPokemonByName(wanderPokemon, true) ? '(duplicate)' : ''}`);
+                App.game.logbook.newLog(
+                    LogBookTypes.SHINY,
+                    App.game.party.alreadyCaughtPokemonByName(wanderPokemon, true)
+                        ? createLogContent.shinyWanderDupe({ pokemon })
+                        : createLogContent.shinyWander({ pokemon })
+                );
             } else {
-                App.game.logbook.newLog(LogBookTypes.WANDER, `A wild ${wanderPokemon} has wandered onto the farm!`);
+                App.game.logbook.newLog(
+                    LogBookTypes.WANDER,
+                    createLogContent.wildWander({ pokemon })
+                );
             }
 
             // Gain Pokemon
-            App.game.party.gainPokemonById(PokemonHelper.getPokemonByName(wanderPokemon).id, shiny, true);
+            App.game.party.gainPokemonByName(wanderPokemon, shiny, true);
             const partyPokemon = App.game.party.getPokemon(PokemonHelper.getPokemonByName(wanderPokemon).id);
-            partyPokemon.effortPoints += App.game.party.calculateEffortPoints(partyPokemon, shiny, GameConstants.WANDERER_EP_YIELD);
+            partyPokemon.effortPoints += App.game.party.calculateEffortPoints(partyPokemon, shiny, GameConstants.ShadowStatus.None, GameConstants.WANDERER_EP_YIELD, Berry.baseWander.includes(wanderPokemon));
 
             // Check for Starf berry generation
             if (shiny) {
@@ -412,11 +464,14 @@ class Plot implements Saveable {
             [MulchType.Freeze_Mulch]: GameConstants.FREEZE_MULCH_MULTIPLIER,
         }[this.mulch] ?? 1;
 
-        multiplier *= this.auraGrowth();
-
-        // Handle Death Aura
-        if (this.stage() == PlotStage.Berry && this.berry != BerryType.Kasib) {
-            multiplier *= this.auraDeath();
+        if (this.stage() !== PlotStage.Berry) {
+            multiplier *= this.auraGrowth();
+        } else {
+            multiplier *= this.auraDecay();
+            // Handle Death Aura
+            if (this.berry !== BerryType.Kasib) {
+                multiplier *= this.auraDeath();
+            }
         }
 
         return multiplier;

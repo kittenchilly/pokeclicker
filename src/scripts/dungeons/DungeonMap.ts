@@ -8,7 +8,8 @@ class DungeonMap {
 
     constructor(
         size: number,
-        public flash = false
+        private generateChestLoot: () => { loot: Loot, tier: LootTier },
+        private flash?: DungeonFlash
     ) {
         if (size <= GameConstants.MAX_DUNGEON_SIZE) {
             this.floorSizes = [size];
@@ -21,25 +22,9 @@ class DungeonMap {
         this.playerPosition = ko.observable(new Point(Math.floor(this.floorSizes[0] / 2), this.floorSizes[0] - 1));
         this.playerMoved = ko.observable(false);
 
-        // Move the boss or ladder if it spawns on the player.
-        this.floorSizes.forEach((size, index) => {
-            const endTileType = index == this.floorSizes.length - 1 ? GameConstants.DungeonTile.boss : GameConstants.DungeonTile.ladder;
-            const entranceTile = this.board()[index][size - 1][Math.floor(size / 2)];
-            if (entranceTile.type() == endTileType) {
-                entranceTile.type(GameConstants.DungeonTile.entrance);
-                const newX = Rand.intBetween(0, size - 1);
-                const newY = Rand.intBetween(0, size - 2); // Don't allow it to be on the bottom row
-                this.board()[index][newY][newX].type(endTileType);
-                this.board()[index][newY][newX].calculateCssClass();
-            }
-            entranceTile.type(GameConstants.DungeonTile.entrance);
-            entranceTile.isVisible = true;
-            entranceTile.isVisited = true;
-        });
         this.currentTile().hasPlayer = true;
-        if (this.flash) {
-            this.nearbyTiles(this.playerPosition()).forEach(t => t.isVisible = true);
-        }
+        this.flash?.apply(this.board(), this.playerPosition());
+
         this.totalFights = ko.observable(this.board().flat().flat().filter((t) => t.type() == GameConstants.DungeonTile.enemy).length);
         this.totalChests = ko.observable(this.board().flat().flat().filter((t) => t.type() == GameConstants.DungeonTile.chest).length);
     }
@@ -70,9 +55,8 @@ class DungeonMap {
         if (this.hasAccessToTile(point)) {
             this.currentTile().hasPlayer = false;
             this.playerPosition(point);
-            if (this.flash) {
-                this.nearbyTiles(point).forEach(t => t.isVisible = true);
-            }
+            this.flash?.apply(this.board(), this.playerPosition());
+
             this.currentTile().hasPlayer = true;
             this.currentTile().isVisible = true;
             this.currentTile().isVisited = true;
@@ -143,32 +127,33 @@ class DungeonMap {
 
             // Boss or ladder
             if (index == this.floorSizes.length - 1) {
-                mapList.push(new DungeonTile(GameConstants.DungeonTile.boss));
+                mapList.push(new DungeonTile(GameConstants.DungeonTile.boss, null));
             } else {
-                mapList.push(new DungeonTile(GameConstants.DungeonTile.ladder));
+                mapList.push(new DungeonTile(GameConstants.DungeonTile.ladder, null));
             }
 
-            // Chests (leave 1 space for enemy and 1 space for empty tile)
+            // Chests (leave 1 space for enemy and 1 space for entrance)
             for (let i = 0; i < size && mapList.length < size * size - 2; i++) {
-                mapList.push(new DungeonTile(GameConstants.DungeonTile.chest));
+                mapList.push(new DungeonTile(GameConstants.DungeonTile.chest, this.generateChestLoot()));
             }
 
-            // Enemy Pokemon (leave 1 space for empty tile)
+            // Enemy Pokemon (leave 1 space for entrance)
             for (let i = 0; i < size * 2 + 3 && mapList.length < size * size - 1; i++) {
-                mapList.push(new DungeonTile(GameConstants.DungeonTile.enemy));
+                mapList.push(new DungeonTile(GameConstants.DungeonTile.enemy, null));
             }
 
-            // Fill with empty tiles
-            for (let i: number = mapList.length; i < size * size; i++) {
-                mapList.push(new DungeonTile(GameConstants.DungeonTile.empty));
+            // Fill with empty tiles (leave 1 space for entrance)
+            for (let i: number = mapList.length; i < size * size - 1; i++) {
+                mapList.push(new DungeonTile(GameConstants.DungeonTile.empty, null));
             }
 
             // Shuffle the tiles randomly
             this.shuffle(mapList);
-            // Make sure the player tile is empty
-            while (mapList[mapList.length - Math.floor(size / 2) - 1].type() != GameConstants.DungeonTile.empty) {
-                this.shuffle(mapList);
-            }
+            // Then place the entrance tile
+            const entranceTile = new DungeonTile(GameConstants.DungeonTile.entrance, null);
+            entranceTile.isVisible = true;
+            entranceTile.isVisited = true;
+            mapList.splice(mapList.length + 1 - Math.ceil(size / 2), 0, entranceTile);
 
             // Create a 2d array
             const floor: DungeonTile[][] = [];

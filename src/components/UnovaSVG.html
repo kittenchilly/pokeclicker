@@ -394,7 +394,7 @@
         , x: 39, y: 52
         , width: 4, height: 9
         , databind: "click:function(){MapHelper.moveToTown('A Perfectly Ordinary Frigate')}, attr:{ class: MapHelper.calculateTownCssClass('A Perfectly Ordinary Frigate') }"
-        , visible:  "(App.game.quests.getQuestLine('Quest for the DNA Splicers').curQuest() >= 1 || App.game.quests.getQuestLine('Quest for the DNA Splicers').state() == 2) && (App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunt 2')]() == 0 || App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunt 3')]() == 0 || (App.game.quests.getQuestLine('Quest for the DNA Splicers').curQuest() <= 4 && App.game.quests.getQuestLine('Quest for the DNA Splicers').state() == 1))"
+        , visible:  "(App.game.quests.getQuestLine('Hollow Truth and Ideals').curQuest() >= 1 || App.game.quests.getQuestLine('Hollow Truth and Ideals').state() == 2) && (App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunt 2')]() == 0 || App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunt 3')]() == 0 || (App.game.quests.getQuestLine('Hollow Truth and Ideals').curQuest() <= 4 && App.game.quests.getQuestLine('Hollow Truth and Ideals').state() == 1))"
         , image: "assets/images/map/plasmafrigate_ship.png"
         , connectedToTown: "A Perfectly Ordinary Frigate"
         })
@@ -436,7 +436,7 @@
         , x: 36, y: 35
         , width: 4, height: 9
         , databind: "click:function(){MapHelper.moveToTown('A Totally Unsuspicious Frigate')}, attr:{ class: MapHelper.calculateTownCssClass('A Totally Unsuspicious Frigate') }"
-        , visible:  "App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunt 2')]() >= 1 && App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunt 3')]() >= 1 && (App.game.quests.getQuestLine('Quest for the DNA Splicers').curQuest() >= 5 || App.game.quests.getQuestLine('Quest for the DNA Splicers').state() == 2) && (App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunt 4')]() == 0 || App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunt 5')]() == 0 || App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunts 1')]() == 0 || App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunts 2')]() == 0 || (App.game.quests.getQuestLine('Quest for the DNA Splicers').curQuest() <= 7 && App.game.quests.getQuestLine('Quest for the DNA Splicers').state() == 1))"
+        , visible:  "App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunt 2')]() >= 1 && App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunt 3')]() >= 1 && (App.game.quests.getQuestLine('Hollow Truth and Ideals').curQuest() >= 5 || App.game.quests.getQuestLine('Hollow Truth and Ideals').state() == 2) && (App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunt 4')]() == 0 || App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunt 5')]() == 0 || App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunts 1')]() == 0 || App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Team Plasma Grunts 2')]() == 0 || (App.game.quests.getQuestLine('Hollow Truth and Ideals').curQuest() <= 7 && App.game.quests.getQuestLine('Hollow Truth and Ideals').state() == 1))"
         , image: "assets/images/map/plasmafrigate_ship.png"
         , connectedToTown: "A Totally Unsuspicious Frigate"
         })
@@ -493,7 +493,7 @@
         , x: 47, y: 5
         , width: 9, height: 6.5
         , databind: "click:function(){MapHelper.moveToTown('Team Plasma Assault')}, attr:{ class: MapHelper.calculateTownCssClass('Team Plasma Assault') }"
-        , visible:  "App.game.statistics.gymsDefeated[GameConstants.getGymIndex('Opelucid City')]() >= 1 && App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Zinzolin 1')]() >= 1 && (App.game.quests.getQuestLine('Quest for the DNA Splicers').curQuest() >= 12 || App.game.quests.getQuestLine('Quest for the DNA Splicers').state() == 2) && (App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Plasma Shadow 1')]() == 0 || (App.game.quests.getQuestLine('Quest for the DNA Splicers').curQuest() <= 14 && App.game.quests.getQuestLine('Quest for the DNA Splicers').state() == 1))"
+        , visible:  "App.game.statistics.gymsDefeated[GameConstants.getGymIndex('Opelucid City')]() >= 1 && App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Zinzolin 1')]() >= 1 && (App.game.quests.getQuestLine('Hollow Truth and Ideals').curQuest() >= 12 || App.game.quests.getQuestLine('Hollow Truth and Ideals').state() == 2) && (App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Plasma Shadow 1')]() == 0 || (App.game.quests.getQuestLine('Hollow Truth and Ideals').curQuest() <= 14 && App.game.quests.getQuestLine('Hollow Truth and Ideals').state() == 1))"
         , image: "assets/images/map/plasmafrigate_airship.png"
         , connectedToTown: "Team Plasma Assault"
         })
@@ -725,7 +725,7 @@
         , x: 95, y: 16
         , width: 4, height: 9
         , databind: "click:function(){MapHelper.moveToTown('Plasma Frigate')}, attr:{ class: MapHelper.calculateTownCssClass('Plasma Frigate') }"
-        , visible:  "App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Plasma Shadow 1')]() >= 1 && (App.game.statistics.dungeonsCleared[GameConstants.getDungeonIndex('Plasma Frigate')]() == 0 || (App.game.quests.getQuestLine('Quest for the DNA Splicers').curQuest() <= 15 && App.game.quests.getQuestLine('Quest for the DNA Splicers').state() == 1)) && (App.game.quests.getQuestLine('Quest for the DNA Splicers').curQuest() >= 15 || App.game.quests.getQuestLine('Quest for the DNA Splicers').state() == 2)"
+        , visible:  "App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Plasma Shadow 1')]() >= 1 && (App.game.statistics.dungeonsCleared[GameConstants.getDungeonIndex('Plasma Frigate')]() == 0 || (App.game.quests.getQuestLine('Hollow Truth and Ideals').curQuest() <= 15 && App.game.quests.getQuestLine('Hollow Truth and Ideals').state() == 1)) && (App.game.quests.getQuestLine('Hollow Truth and Ideals').curQuest() >= 15 || App.game.quests.getQuestLine('Hollow Truth and Ideals').state() == 2)"
         , image: "assets/images/map/plasmafrigate_ship.png"
         , connectedToTown: "Plasma Frigate"
         })
@@ -750,15 +750,15 @@
         , width: 4, height: 3
         })
     %>
-    <!--Giant Chasm extension-->
+    <!--Plasma Frigate extension-->
     <%- include('templates/mapOverlay',
-        { name: "Giant Chasm"
+        { name: "Plasma Frigate"
         , x: 77, y: 0.5
         , width: 9, height: 6.5
-        , databind: "click:function(){MapHelper.moveToTown('Giant Chasm')}, attr:{ class: MapHelper.calculateTownCssClass('Giant Chasm') }"
-        , visible:  "App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Plasma Shadow 1')]() >= 1 && App.game.statistics.dungeonsCleared[GameConstants.getDungeonIndex('Plasma Frigate')]() >= 1 && App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Ghetsis 2')]() == 0 && (App.game.quests.getQuestLine('Quest for the DNA Splicers').curQuest() >= 16 || App.game.quests.getQuestLine('Quest for the DNA Splicers').state() == 2)"
+        , databind: "click:function(){MapHelper.moveToTown('Plasma Frigate')}, attr:{ class: MapHelper.calculateTownCssClass('Plasma Frigate') }"
+        , visible:  "App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Plasma Shadow 1')]() >= 1 && App.game.statistics.dungeonsCleared[GameConstants.getDungeonIndex('Plasma Frigate')]() >= 1 && App.game.statistics.temporaryBattleDefeated[GameConstants.getTemporaryBattlesIndex('Ghetsis 2')]() == 0 && (App.game.quests.getQuestLine('Hollow Truth and Ideals').curQuest() >= 16 || App.game.quests.getQuestLine('Hollow Truth and Ideals').state() == 2)"
         , image: "assets/images/map/plasmafrigate_airship.png"
-        , isExtension: true
+        , connectedToTown: "Plasma Frigate"
         })
     %>
 
@@ -840,9 +840,17 @@
     <%- include('templates/mapPOI',
         { name: "Dock"
         , x: 51, y: 53
-        , width: 3, height: 7
+        , width: 3, height: 4
         , databind: "click:function(){MapHelper.openShipModal()}, attr: { class: MapHelper.calculateTownCssClass('Castelia City') }"
         })
+     %>
+
+     <%- include('templates/mapPOI',
+        { name: "S. S. Anne"
+        , x: 47, y: 57
+        , width: 8, height: 3
+        , databind: "click:function(){MapHelper.openShipModal()}, attr: { class: MapHelper.calculateTownCssClass('Castelia City') }"
+       })
      %>
 
     <!--Skyarrow Bridge-->
@@ -852,7 +860,7 @@
         , x: 62, y: 40
         , databind: `attr: { class: MapHelper.accessToRoute(4, GameConstants.Region.unova) ? 'unlockedRoute' : 'lockedRoute' },
             click: () => {
-                Notifier.notify({message: 'What a lovely view'});
+                Notifier.notify({message: 'What a lovely view.'});
             }`
         })
     %>
@@ -863,7 +871,7 @@
         , x: 65, y: 40
         , databind: `attr: { class: MapHelper.accessToRoute(4, GameConstants.Region.unova) ? 'unlockedRoute' : 'lockedRoute' },
             click: () => {
-                Notifier.notify({message: 'What a lovely view'});
+                Notifier.notify({message: 'What a lovely view.'});
             }`
         })
     %>
@@ -897,7 +905,7 @@
         , x: 10, y: 48
         , width: 6, height: 3
         , databind: "click:function(){MapHelper.moveToTown('Aspertia City')}, attr:{ class: MapHelper.calculateTownCssClass('Aspertia City') }"
-        , visible:  "MapHelper.ableToTravel() && player.starter() != GameConstants.Starter.Pikachu"
+        , visible:  "MapHelper.ableToTravel() && player.regionStarters[GameConstants.Region.kanto]() != GameConstants.Starter.Special"
         , image: "assets/images/map/blimp_empty.png"
         })
     %>
@@ -907,18 +915,159 @@
         , x: 10, y: 48
         , width: 6, height: 3
         , databind: "click:function(){MapHelper.moveToTown('Aspertia City')}, attr:{ class: MapHelper.calculateTownCssClass('Aspertia City') }"
-        , visible:  "MapHelper.ableToTravel() && player.starter() == GameConstants.Starter.Pikachu"
+        , visible:  "MapHelper.ableToTravel() && player.regionStarters[GameConstants.Region.kanto]() == GameConstants.Starter.Special"
         , image: "assets/images/map/blimp_pikachu.png"
         })
     %>
 
     <%- include('templates/mapOverlay',
-        { name: "Ash Ketchum"
-        , x: 8, y: 27
+        { name: "Pokémon Trainer Hugh"
+        , x: 5, y: 49
         , width: 4, height: 4
-        , databind: "click: () => TemporaryBattleList['Ash Ketchum Unova'].protectedOnclick()"
-        , visible:  "TemporaryBattleList['Ash Ketchum Unova'] && TemporaryBattleList['Ash Ketchum Unova'].isVisible()"
-        , image: "assets/images/map/ashketchumoverworld.png"
+        , databind: "click: () => TemporaryBattleList['Hugh 1'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Hugh 1'] && TemporaryBattleList['Hugh 1'].isVisible()"
+        , image: "assets/images/map/hugh.png"
+        })
+    %>
+
+    <%- include('templates/mapOverlay',
+        { name: "Pokémon Trainer Hugh"
+        , x: 18, y: 40
+        , width: 4, height: 4
+        , databind: "click: () => TemporaryBattleList['Hugh 2'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Hugh 2'] && TemporaryBattleList['Hugh 2'].isVisible()"
+        , image: "assets/images/map/hugh.png"
+        })
+    %>
+
+    <%- include('templates/mapOverlay',
+        { name: "Pokémon Trainer Colress"
+        , x: 50.5, y: 38
+        , width: 4, height: 4
+        , databind: "click: () => TemporaryBattleList['Colress 1'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Colress 1'] && TemporaryBattleList['Colress 1'].isVisible()"
+        , image: "assets/images/map/colress.png"
+        })
+    %>
+
+    <%- include('templates/mapOverlay',
+        { name: "Pokémon Trainer Hugh"
+        , x: 29, y: 35
+        , width: 4, height: 4
+        , databind: "click: () => TemporaryBattleList['Hugh 3'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Hugh 3'] && TemporaryBattleList['Hugh 3'].isVisible()"
+        , image: "assets/images/map/hugh.png"
+        })
+    %>
+
+    <%- include('templates/mapOverlay',
+        { name: "Pokémon Trainer Cheren"
+        , x: 29, y: 35
+        , width: 4, height: 4
+        , databind: "click: () => TemporaryBattleList['Cheren'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Cheren'] && TemporaryBattleList['Cheren'].isVisible()"
+        , image: "assets/images/map/cheren.png"
+        })
+    %>
+
+    <%- include('templates/mapOverlay',
+        { name: "Pokémon Trainer Colress"
+        , x: 29, y: 35
+        , width: 4, height: 4
+        , databind: "click: () => TemporaryBattleList['Colress 2'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Colress 2'] && TemporaryBattleList['Colress 2'].isVisible()"
+        , image: "assets/images/map/colress.png"
+        })
+    %>
+
+    <%- include('templates/mapOverlay',
+        { name: "Pokémon Trainer Hugh"
+        , x: 84, y: 20
+        , width: 4, height: 4
+        , databind: "click: () => TemporaryBattleList['Hugh 4'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Hugh 4'] && TemporaryBattleList['Hugh 4'].isVisible()"
+        , image: "assets/images/map/hugh.png"
+        })
+    %>
+
+    <%- include('templates/mapOverlay',
+        { name: "Pokémon Trainer Hugh"
+        , x: 58.5, y: 2
+        , width: 4, height: 4
+        , databind: "click: () => TemporaryBattleList['Hugh 5'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Hugh 5'] && TemporaryBattleList['Hugh 5'].isVisible()"
+        , image: "assets/images/map/hugh.png"
+        })
+    %>
+
+    <%- include('templates/mapOverlay',
+        { name: "Pokémon Trainer Hugh"
+        , x: 84, y: 20
+        , width: 4, height: 4
+        , databind: "click: () => TemporaryBattleList['Hugh 6'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Hugh 6'] && TemporaryBattleList['Hugh 6'].isVisible()"
+        , image: "assets/images/map/hugh.png"
+        })
+    %>
+
+     <%- include('templates/mapOverlay',
+         { name: "Ash Ketchum"
+         , x: 8, y: 27
+         , width: 4, height: 4
+         , databind: "click: () => TemporaryBattleList['Ash Ketchum Unova'].protectedOnclick()"
+         , visible:  "TemporaryBattleList['Ash Ketchum Unova'] && TemporaryBattleList['Ash Ketchum Unova'].isVisible()"
+         , image: "assets/images/map/ashketchumoverworld.png"
+         })
+     %>
+
+     <%- include('templates/mapOverlay',
+         { name: "Anomaly Mewtwo"
+         , x: 58.5, y: 44
+         , width: 4, height: 4
+         , databind: "click: () => TemporaryBattleList['Anomaly Mewtwo 5'].protectedOnclick()"
+         , visible:  "TemporaryBattleList['Anomaly Mewtwo 5'] && TemporaryBattleList['Anomaly Mewtwo 5'].isVisible()"
+         , image: "assets/images/map/mewtwoy.png"
+         })
+     %>
+
+    <%- include('templates/mapOverlay',
+        { name: "Genesect Burn"
+        , x: 45, y: 45
+        , width: 4, height: 4
+        , databind: "click: () => TemporaryBattleList['Genesect Burn'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Genesect Burn'] && TemporaryBattleList['Genesect Burn'].isVisible()"
+        , image: "assets/images/map/Overworld Genesect.png"
+        })
+    %>
+
+
+    <%- include('templates/mapOverlay',
+        { name: "Genesect Chill"
+        , x: 54, y: 51
+        , width: 4, height: 4
+        , databind: "click: () => TemporaryBattleList['Genesect Chill'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Genesect Chill'] && TemporaryBattleList['Genesect Chill'].isVisible()"
+        , image: "assets/images/map/Overworld Genesect.png"
+        })
+    %>
+
+    <%- include('templates/mapOverlay',
+        { name: "Genesect Douse"
+        , x: 45, y: 51
+        , width: 4, height: 4
+        , databind: "click: () => TemporaryBattleList['Genesect Douse'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Genesect Douse'] && TemporaryBattleList['Genesect Douse'].isVisible()"
+        , image: "assets/images/map/Overworld Genesect.png"
+        })
+    %>
+
+    <%- include('templates/mapOverlay',
+        { name: "Genesect Shock"
+        , x: 54, y: 45
+        , width: 4, height: 4
+        , databind: "click: () => TemporaryBattleList['Genesect Shock'].protectedOnclick()"
+        , visible:  "TemporaryBattleList['Genesect Shock'] && TemporaryBattleList['Genesect Shock'].isVisible()"
+        , image: "assets/images/map/Overworld Genesect.png"
         })
     %>
 

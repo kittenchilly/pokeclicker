@@ -7,7 +7,10 @@ export default class Settings {
     static list: Setting<any>[] = [];
 
     static add(setting: Setting<any>) {
-        if (!this.getSetting(setting.name)) {
+        if (!setting.name) {
+            // eslint-disable-next-line no-console
+            console.warn(`Cannot add settings with no name (display name: '${setting.defaultDisplayName}')`);
+        } else if (!this.getSetting(setting.name)) {
             this.list.push(setting);
         }
     }
@@ -34,15 +37,23 @@ export default class Settings {
     }
 
     static fromJSON(dict) {
-        Object.entries(dict || {})?.forEach(([name, value]) => this.setSettingByName(name, value));
+        Object.entries(dict || {})?.forEach(([name, value]) => {
+            this.setSettingByName(name, value);
+        });
     }
 
-    static enumToSettingOptionArray(obj: any, filter: (v) => boolean = () => true) {
-        return GameHelper.enumStrings(obj).filter(filter).map((val) => new SettingOption(camelCaseToString(val), `${obj[val]}`));
+    static enumToSettingOptionArray<T extends Record<string, unknown>>(obj: T, filter: (v) => boolean = () => true, displayNames?: Record<keyof T, string>) {
+        return GameHelper.enumStrings(obj).filter(filter).map(
+            (val) => new SettingOption(displayNames ? displayNames[val] : camelCaseToString(val), `${obj[val]}`),
+        );
     }
 
     static enumToNumberSettingOptionArray(obj: any, filter: (v) => boolean = () => true) {
         return GameHelper.enumStrings(obj).filter(filter).map((val) => new SettingOption(camelCaseToString(val), obj[val]));
+    }
+
+    static selectOptionsToSettingOptions<T>(opts: Array<{ name: string, value: T }>) {
+        return opts.map(({ name, value }) => new SettingOption(camelCaseToString(name), value));
     }
 
     static saveDefault() {

@@ -1,7 +1,6 @@
 abstract class TownContent {
     public abstract cssClass(): string;
     public abstract text(): string;
-    public abstract isVisible(): boolean;
     public abstract onclick(): void;
     public tooltip: string = undefined;
 
@@ -11,8 +10,8 @@ abstract class TownContent {
         this.parent = parent;
     }
 
-    public areaStatus() {
-        return areaStatus.completed;
+    public areaStatus() : areaStatus {
+        return this.isUnlocked() ? areaStatus.completed : areaStatus.locked;
     }
 
     public isUnlocked(): boolean {
@@ -21,6 +20,13 @@ abstract class TownContent {
 
     public clears(): number {
         return undefined;
+    }
+
+    public isVisible(): boolean {
+        if (this.requirements.some(r => r instanceof DevelopmentRequirement || (r instanceof MultiRequirement && r.requirements.some(r2 => r2 instanceof DevelopmentRequirement)))) {
+            return this.isUnlocked();
+        }
+        return true;
     }
 
     public protectedOnclick(): void {
@@ -69,10 +75,6 @@ class DockTownContent extends TownContent {
 class BattleFrontierTownContent extends TownContent {
     public cssClass() {
         return 'btn btn-primary';
-    }
-
-    public isVisible() {
-        return true;
     }
 
     public onclick(): void {
@@ -131,5 +133,53 @@ class MoveToDungeon extends TownContent {
             return undefined;
         }
         return App.game.statistics.dungeonsCleared[GameConstants.getDungeonIndex(this.dungeon.name)]();
+    }
+}
+
+class MoveToTown extends TownContent {
+    constructor(private townName: string, private visibleRequirement: Requirement = undefined, private includeAreaStatus: boolean = true) {
+        super([]);
+    }
+
+    public cssClass() {
+        return 'btn btn-secondary';
+    }
+    public text(): string {
+        return this.townName;
+    }
+    public isVisible(): boolean {
+        return this.visibleRequirement?.isCompleted() ?? true;
+    }
+    public onclick(): void {
+        MapHelper.moveToTown(this.townName);
+    }
+    public isUnlocked(): boolean {
+        return TownList[this.townName].isUnlocked();
+    }
+
+    public areaStatus(): areaStatus {
+        if (this.includeAreaStatus) {
+            return areaStatus[MapHelper.calculateTownCssClass(this.townName)];
+        } else {
+            return areaStatus.completed;
+        }
+    }
+}
+
+class WeatherAppTownContent extends TownContent {
+    public cssClass() {
+        return 'btn btn-secondary';
+    }
+
+    public isVisible() {
+        return WeatherApp.isUnlocked();
+    }
+
+    public onclick(): void {
+        WeatherApp.openWeatherAppModal();
+    }
+
+    public text() {
+        return 'Open the Castform App';
     }
 }

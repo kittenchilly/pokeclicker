@@ -1,4 +1,3 @@
-///<reference path="Item.ts"/>
 class EvolutionStone extends CaughtIndicatingItem {
 
     type: GameConstants.StoneType;
@@ -14,37 +13,51 @@ class EvolutionStone extends CaughtIndicatingItem {
         player.gainItem(GameConstants.StoneType[this.type], n);
     }
 
-    public use(pokemon?: PokemonNameType): boolean {
+    public use(amount: number, pokemon?: PokemonNameType): boolean {
         const partyPokemon: PartyPokemon = App.game.party.getPokemon(PokemonHelper.getPokemonByName(pokemon).id);
         const shiny = partyPokemon.useStone(this.type);
         return shiny;
     }
 
-    getCaughtStatus = ko.pureComputed((): CaughtStatus => {
-        // Only include Pokémon which have evolutions
-        const unlockedEvolutions = pokemonList.filter((p: PokemonListData) => p.evolutions)
-            // only include base Pokémon we have caught
-            .filter(p => PartyController.getCaughtStatusByName(p.name))
-            // Map to the evolution which uses this stone type
-            .map((p: PokemonListData) => p.evolutions.filter(e => e.type.includes(EvolutionType.Stone) && (e as StoneEvolution).stone === this.type))
-            // Flatten the array (in case of multiple evolutions)
-            .flat()
-            // Ensure the we actually found an evolution
-            .filter(evolution => evolution)
-            // Filter out any Pokémon which can't be obtained yet (future region)
-            .filter(evolution => PokemonHelper.calcNativeRegion(evolution.getEvolvedPokemon()) <= player.highestRegion())
-            // Finally get the evolution
-            .map(evolution => evolution.getEvolvedPokemon());
+    pokemonWithEvolution = ko.pureComputed(() => PartyController.getPokemonsWithEvolution(this.type))
 
-        if (unlockedEvolutions.length == 0) {
-            return undefined;
+    getCaughtStatus = ko.pureComputed((): CaughtStatus => {
+        const statuses = this.pokemonWithEvolution().flatMap(
+            (pokemon) => PartyController.getStoneEvolutionsCaughtData(pokemon.id, this.type)
+        );
+
+        return statuses.length > 0
+            ? statuses.reduce((lowest, { status }) => Math.min(lowest, status), CaughtStatus.CaughtShiny)
+            : undefined;
+    });
+
+    getPokerusStatus = ko.pureComputed((): GameConstants.Pokerus => {
+        const statuses = this.pokemonWithEvolution().flatMap(
+            (pokemon) => PartyController.getStoneEvolutionsPokerusData(pokemon.id, this.type)
+        );
+
+        return statuses.length > 0
+            ? statuses.reduce((lowest, { status }) => Math.min(lowest, status), GameConstants.Pokerus.Resistant)
+            : undefined;
+    });
+
+    init() {
+        // If a region has already been manually set
+        if (this.unlockedRegion > GameConstants.Region.none) {
+            return false;
         }
 
-        // Calculate the lowest caught status
-        return unlockedEvolutions.reduce((status: CaughtStatus, pokemonName: PokemonNameType) => {
-            return Math.min(status, PartyController.getCaughtStatusByName(pokemonName));
-        }, CaughtStatus.CaughtShiny);
-    });
+        // Get a list of evolutions that use this stone, set the unlock region to the lowest region
+        this.unlockedRegion = Math.min(...pokemonList.filter((p) =>
+            // Filter to only include pokemon that make use of this evolution stone
+            (p as PokemonListData).nativeRegion > GameConstants.Region.none
+            && (p as PokemonListData).evolutions != undefined
+            && (p as PokemonListData).evolutions.some(e => e.trigger === EvoTrigger.STONE && (e as StoneEvoData).stone == this.type)).map((p) =>
+            // Map to the native region for evolutions that use this stone
+            Math.min(...(p as PokemonListData).evolutions.filter(e => e.trigger === EvoTrigger.STONE && (e as StoneEvoData).stone == this.type)
+                .map((e) => Math.max((p as PokemonListData).nativeRegion, PokemonHelper.calcNativeRegion(e.evolvedPokemon)))
+                .filter((r) => r > GameConstants.Region.none))));
+    }
 }
 
 // TODO: Set prices for different kinds of stones
@@ -77,9 +90,11 @@ ItemList.Black_DNA         = new EvolutionStone(GameConstants.StoneType.Black_DN
 ItemList.White_DNA         = new EvolutionStone(GameConstants.StoneType.White_DNA, 2500, undefined, 'White DNA');
 ItemList.Sachet            = new EvolutionStone(GameConstants.StoneType.Sachet, 2500, undefined , 'Sachet');
 ItemList.Whipped_dream     = new EvolutionStone(GameConstants.StoneType.Whipped_dream, 2500, undefined , 'Whipped Dream');
+ItemList.Key_stone          = new EvolutionStone(GameConstants.StoneType.Key_stone, 25000, GameConstants.Currency.battlePoint, 'Key Stone', GameConstants.Region.kalos);
 ItemList.Ice_stone         = new EvolutionStone(GameConstants.StoneType.Ice_stone, 2500, undefined , 'Ice Stone');
 ItemList.Solar_light       = new EvolutionStone(GameConstants.StoneType.Solar_light, 2500, undefined, 'Solar Light');
 ItemList.Lunar_light       = new EvolutionStone(GameConstants.StoneType.Lunar_light, 2500, undefined, 'Lunar Light');
+ItemList.Pure_light       = new EvolutionStone(GameConstants.StoneType.Pure_light, 2500, undefined, 'Pure Light');
 ItemList.Sweet_apple       = new EvolutionStone(GameConstants.StoneType.Sweet_apple, 5000, undefined , 'Sweet Apple');
 ItemList.Tart_apple        = new EvolutionStone(GameConstants.StoneType.Tart_apple, 5000, undefined , 'Tart Apple');
 ItemList.Cracked_pot       = new EvolutionStone(GameConstants.StoneType.Cracked_pot, 5000, undefined , 'Cracked Pot');
@@ -87,3 +102,11 @@ ItemList.Galarica_cuff     = new EvolutionStone(GameConstants.StoneType.Galarica
 ItemList.Galarica_wreath   = new EvolutionStone(GameConstants.StoneType.Galarica_wreath, 5000, undefined , 'Galarica Wreath');
 ItemList.Black_mane_hair   = new EvolutionStone(GameConstants.StoneType.Black_mane_hair, 2500, undefined, 'Black Mane Hair');
 ItemList.White_mane_hair   = new EvolutionStone(GameConstants.StoneType.White_mane_hair, 2500, undefined, 'White Mane Hair');
+ItemList.Black_augurite     = new EvolutionStone(GameConstants.StoneType.Black_augurite, 5000, undefined , 'Black Augurite');
+ItemList.Peat_block   = new EvolutionStone(GameConstants.StoneType.Peat_block, 5000, undefined , 'Peat Block');
+ItemList.Auspicious_armor   = new EvolutionStone(GameConstants.StoneType.Auspicious_armor, 5000, undefined , 'Auspicious Armor');
+ItemList.Malicious_armor   = new EvolutionStone(GameConstants.StoneType.Malicious_armor, 5000, undefined , 'Malicious Armor');
+ItemList.Leaders_crest   = new EvolutionStone(GameConstants.StoneType.Leaders_crest, 5000, undefined , 'Leader\'s Crest');
+ItemList.Gimmighoul_coin   = new EvolutionStone(GameConstants.StoneType.Gimmighoul_coin, 5000, undefined , 'Gimmighoul Coin');
+ItemList.Syrupy_apple   = new EvolutionStone(GameConstants.StoneType.Syrupy_apple, 5000, undefined , 'Syrupy Apple');
+ItemList.Unremarkable_teacup   = new EvolutionStone(GameConstants.StoneType.Unremarkable_teacup, 5000, undefined , 'Unremarkable Teacup');

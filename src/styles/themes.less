@@ -10,14 +10,13 @@
 
 /* Dark themes */
 .cyborg, .darkly, .slate, .superhero {
-  // make pokeball image lighter
-  img[src="assets/images/pokeball/None.svg"] {
+  // make pokeball and gear images lighter
+  img[src="assets/images/pokeball/None.svg"], img[src="assets/images/fa-cog.svg"] {
     filter: invert(1) brightness(90%);
   }
 
   // make the pokemon silhouettes lighter
   .dungeon-pokemon-locked {
-    -webkit-filter: brightness(0%) invert(100%); /* Safari 6.0 - 9.0 */
     filter: brightness(0%) invert(100%);
     opacity: 0.3;
   }
@@ -27,16 +26,75 @@
   }
 }
 
+/* Themes with light start menu text */
+.cosmo, .cyborg, .darkly, .flatly, .journal, .litera, .minty, .sandstone, .sketchy, .slate, .solar, .spacelab, .superhero, .united {
+  // make mute/unmute images white to match "Start Menu" text color
+  img[src="assets/images/volume-high.svg"],
+  img[src="assets/images/volume-xmark.svg"] {
+    filter: invert(1) brightness(100%);
+  }
+}
+
+/* Themes who need more space in tables */
+.cerulean, .cyborg, .darkly, .flatly, .journal, .litera, .materia, .minty, .pulse, .sandstone, .simplex, .sketchy, .slate, .spacelab, .superhero, .united, .yeti {
+  @media (max-width: 992px)
+  {
+    #pokemonVitaminExpandedModal {
+      .tight {
+        .btn {
+          padding-left: 5px !important;
+          padding-right: 5px !important;
+        }
+      }
+    }
+  }
+}
+
+/* Fixes font-light being too bright / unreadable for table-warnings theme specific colour themes */
+.journal, .lux, .materia, .pulse, .sketchy, .spacelab, .united {
+  .table-warning.text-light {
+    color: black !important;
+  }
+}
+
 /* Individual themes */
+.cerulean {
+  /* Evolution items */
+  #evo-item-list, #evo-pokemon-list {
+    .item-selected, .pokemon-selected {
+      color: whitesmoke;
+      background-image: linear-gradient(#4e5458, #565b60 40%, #5b6165);
+    }
+  }
+}
+
 .cosmo {
   .progress .progress-bar {
     font-size: 12px;
+  }
+
+  /* Evolution items */
+  #evo-item-list, #evo-pokemon-list {
+    .list-group-item-action {
+      color: whitesmoke;
+    }
+
+    .list-group-item-action:hover {
+      color: black;
+    }
   }
 }
 
 .cyborg {
   .text-light {
     color: whitesmoke !important;
+  }
+
+  /* Evolution items */
+  #evo-item-list, #evo-pokemon-list {
+    .list-group-item-action {
+      color: whitesmoke;
+    }
   }
 }
 
@@ -46,13 +104,51 @@
   }
 }
 
+.flatly {
+  /* Evolution items */
+  #evo-item-list, #evo-pokemon-list {
+    .list-group-item-action:hover {
+      color: black;
+    }
+  }
+}
+
+.lumen {
+  /* Weather button in dock modal */
+  .btn-weather-dock {
+    border-color: rgba(0,0,0,25%);
+  }
+}
+
 .lux {
   // Font was too large, covering other ui elements
   .pageItemFooter {
     font-size: 12px !important;
   }
+
   .pageItemTitle {
     font-size: 30px !important;
+  }
+
+  #pokemonVitaminExpandedModal {
+    .tight {
+      .btn {
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+      }
+    }
+  }
+
+  #berryDexModal {
+    .table-sm td, .table-sm th {
+      padding: 0.3rem;
+    }
+  }
+
+  #pokemonStatisticsModal {
+    .table-sm td, .table-sm th {
+        padding: 0.3rem 0;
+    }
   }
 }
 
@@ -61,6 +157,13 @@
   .stop-auto {
     position: absolute;
   }
+
+  /* Evolution items */
+  #evo-item-list, #evo-pokemon-list {
+    .item-selected, .pokemon-selected {
+      background: #2196f3 linear-gradient(180deg,#42a6f5,#2196f3) repeat-x;
+    }
+  }
 }
 
 .minty {
@@ -68,6 +171,22 @@
     .btn:not([class*="btn-"]) {
         color: #495057;
     }
+
+    /* Evolution items */
+    #evo-item-list, #evo-pokemon-list {
+      .list-group-item-action:hover {
+        color: black;
+      }
+    }
+}
+
+.simplex {
+  /* Evolution items */
+  #evo-item-list, #evo-pokemon-list {
+    .item-selected, .pokemon-selected {
+      background: #d9230f !important;
+    }
+  }
 }
 
 .sketchy {
@@ -77,10 +196,10 @@
       color: transparent;
     }
 
-    .close:before,
-    .close:hover:before,
-    .close:focus:before,
-    .close:active:before {
+    .close::before,
+    .close:hover::before,
+    .close:focus::before,
+    .close:active::before {
       color: whitesmoke;
     }
   }
@@ -90,22 +209,55 @@
       color: transparent;
     }
 
-    .close:before,
-    .close:hover:before,
-    .close:focus:before,
-    .close:active:before {
+    .close::before,
+    .close:hover::before,
+    .close:focus::before,
+    .close:active::before {
       color: #333;
     }
   }
 
-  .modal-header {
-    border-radius: 0px;
+  //Still had double close for Battle Frontier
+  .close span {
+    visibility: hidden !important;
   }
 
+  //Fixes margins causing white to float off modal
+  #battleContainer table .row {
+    margin: 0 !important
+  }
+
+  //Fixes save containers having a white table
+  .save-container table td {
+    background-color:unset !important;
+  }
+
+  .modal-header {
+    border-radius: 0;
+  }
+
+   // Font was not visible on the footer of battle-views
   .pageItemFooter {
-    // Font was not visible on the footer of battle-views
-    color: rgba(0, 0, 0);
+    background-color: white; // Ensures background is white
+    color: black;
     font-weight: 700;
+  }
+
+  /* Evolution items */
+  #evo-item-list, #evo-pokemon-list {
+    .list-group-item-action {
+      color: whitesmoke;
+    }
+
+    .list-group-item-action:hover {
+      color: black;
+    }
+  }
+
+  .multiselect-dropdown {
+    .form-check-input {
+      margin-left: 0 !important;
+    }
   }
 }
 
@@ -141,23 +293,33 @@
 .solar {
   // Farming
   .seed-list-item.active {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 20%);
   }
 
   // Evolution items modal
-  #showItemsModal {
-    .item-selected {
+  #evo-item-list, #evo-pokemon-list {
+    .item-selected, .pokemon-selected {
       color: whitesmoke;
+      background: #b58900 linear-gradient(180deg,#c09b26,#b58900) repeat-x;
     }
 
     .list-group-item-action {
-      color: #5c5f60;
+      color: whitesmoke;
     }
   }
 
   // Main page
   .card.border-secondary, #pokemonList {
     color: #a0b6b8;
+  }
+}
+
+.spacelab {
+  /* Evolution items */
+  #evo-item-list, #evo-pokemon-list {
+    .item-selected, .pokemon-selected {
+      background: linear-gradient(#6d94bf,#446e9b 50%,#3e648d)
+    }
   }
 }
 

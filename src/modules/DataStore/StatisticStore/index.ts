@@ -2,8 +2,13 @@ import { Observable as KnockoutObservable } from 'knockout';
 import getRouteKillsProxy from './getRouteKillsProxy';
 import { Saveable } from '../common/Saveable';
 import '../../koExtenders';
+import type { PokemonList } from '../../pokemons/PokemonList';
+import { ContestResults, ContestStyle } from '../../GameConstants';
 
 const failedSetValue = () => 0;
+
+type PokemonID = PokemonList[number]['id'];
+type PokemonStats = Record<PokemonID, KnockoutObservable<number>> & { highestID: PokemonID };
 
 export default class Statistics implements Saveable {
     saveKey = 'statistics';
@@ -22,8 +27,8 @@ export default class Statistics implements Saveable {
     clickAttacks: KnockoutObservable<number>;
     questsCompleted: KnockoutObservable<number>;
     totalGemsGained: KnockoutObservable<number>;
-    totalProteinsPurchased: KnockoutObservable<number>;
-    totalProteinsObtained: KnockoutObservable<number>;
+    totalVitaminsPurchased: KnockoutObservable<number>;
+    totalVitaminsObtained: KnockoutObservable<number>;
     // Currency
     totalMoney: KnockoutObservable<number>;
     totalDungeonTokens: KnockoutObservable<number>;
@@ -31,6 +36,7 @@ export default class Statistics implements Saveable {
     totalDiamonds: KnockoutObservable<number>;
     totalFarmPoints: KnockoutObservable<number>;
     totalBattlePoints: KnockoutObservable<number>;
+    totalContestTokens: KnockoutObservable<number>;
     // Pokemon
     totalPokemonCaptured: KnockoutObservable<number>;
     totalPokemonDefeated: KnockoutObservable<number>;
@@ -66,6 +72,16 @@ export default class Statistics implements Saveable {
     totalShinyGenderlessPokemonDefeated: KnockoutObservable<number>;
     totalShinyGenderlessPokemonEncountered: KnockoutObservable<number>;
     totalShinyGenderlessPokemonHatched: KnockoutObservable<number>;
+
+    totalShadowPokemonCaptured: KnockoutObservable<number>;
+    totalShadowPokemonDefeated: KnockoutObservable<number>;
+
+    totalShadowMalePokemonCaptured: KnockoutObservable<number>;
+    totalShadowMalePokemonDefeated: KnockoutObservable<number>;
+    totalShadowFemalePokemonCaptured: KnockoutObservable<number>;
+    totalShadowFemalePokemonDefeated: KnockoutObservable<number>;
+    totalShadowGenderlessPokemonCaptured: KnockoutObservable<number>;
+    totalShadowGenderlessPokemonDefeated: KnockoutObservable<number>;
     // Underground
     undergroundItemsFound: KnockoutObservable<number>;
     undergroundLayersMined: KnockoutObservable<number>;
@@ -82,6 +98,15 @@ export default class Statistics implements Saveable {
     // Battle Frontier
     battleFrontierTotalStagesCompleted: KnockoutObservable<number>;
     battleFrontierHighestStageCompleted: KnockoutObservable<number>;
+    // Safari Zone
+    safariTimesEntered: KnockoutObservable<number>;
+    safariRocksThrown: KnockoutObservable<number>;
+    safariBaitThrown: KnockoutObservable<number>;
+    safariBallsThrown: KnockoutObservable<number>;
+    safariPokemonCaptured: KnockoutObservable<number>;
+    safariShinyPokemonCaptured: KnockoutObservable<number>;
+    safariStepsTaken: KnockoutObservable<number>;
+    safariItemsObtained: KnockoutObservable<number>;
 
     /*
      * arrayObservables
@@ -101,48 +126,60 @@ export default class Statistics implements Saveable {
     gymsDefeated: Array<KnockoutObservable<number>>;
     dungeonsCleared: Array<KnockoutObservable<number>>;
     temporaryBattleDefeated: Array<KnockoutObservable<number>>;
+    // Contests
+    contestResults: Record<ContestResults, KnockoutObservable<number>>;
+    contestStyleMaster: Record<ContestStyle, KnockoutObservable<number>>;
 
     /*
      * objectObservables
      */
-    pokemonCaptured: any;
-    pokemonDefeated: any;
-    pokemonEncountered: any;
-    pokemonHatched: any;
-    shinyPokemonCaptured: any;
-    shinyPokemonDefeated: any;
-    shinyPokemonEncountered: any;
-    shinyPokemonHatched: any;
-    malePokemonCaptured: any;
-    malePokemonDefeated: any;
-    malePokemonEncountered: any;
-    malePokemonHatched: any;
-    femalePokemonCaptured: any;
-    femalePokemonDefeated: any;
-    femalePokemonEncountered: any;
-    femalePokemonHatched: any;
-    shinyMalePokemonCaptured: any;
-    shinyFemalePokemonCaptured: any;
-    shinyMalePokemonDefeated: any;
-    shinyFemalePokemonDefeated: any;
-    shinyMalePokemonEncountered: any;
-    shinyFemalePokemonEncountered: any;
-    shinyMalePokemonHatched: any;
-    shinyFemalePokemonHatched: any;
+    pokemonCaptured: PokemonStats;
+    pokemonDefeated: PokemonStats;
+    pokemonSeen: PokemonStats;
+    pokemonEncountered: PokemonStats;
+    pokemonHatched: PokemonStats;
+    shinyPokemonCaptured: PokemonStats;
+    shinyPokemonDefeated: PokemonStats;
+    shinyPokemonEncountered: PokemonStats;
+    shinyPokemonHatched: PokemonStats;
+    malePokemonCaptured: PokemonStats;
+    malePokemonDefeated: PokemonStats;
+    malePokemonEncountered: PokemonStats;
+    malePokemonHatched: PokemonStats;
+    femalePokemonCaptured: PokemonStats;
+    femalePokemonDefeated: PokemonStats;
+    femalePokemonEncountered: PokemonStats;
+    femalePokemonHatched: PokemonStats;
+    shinyMalePokemonCaptured: PokemonStats;
+    shinyFemalePokemonCaptured: PokemonStats;
+    shinyMalePokemonDefeated: PokemonStats;
+    shinyFemalePokemonDefeated: PokemonStats;
+    shinyMalePokemonEncountered: PokemonStats;
+    shinyFemalePokemonEncountered: PokemonStats;
+    shinyMalePokemonHatched: PokemonStats;
+    shinyFemalePokemonHatched: PokemonStats;
+    shadowPokemonCaptured: PokemonStats;
+    shadowPokemonDefeated: PokemonStats;
+    shadowMalePokemonCaptured: PokemonStats;
+    shadowFemalePokemonCaptured: PokemonStats;
+    shadowMalePokemonDefeated: PokemonStats;
+    shadowFemalePokemonDefeated: PokemonStats;
+    npcTalkedTo: Record<string, KnockoutObservable<number>>;
 
     observables = [
         'secondsPlayed',
         'clickAttacks',
         'questsCompleted',
         'totalGemsGained',
-        'totalProteinsPurchased',
-        'totalProteinsObtained',
+        'totalVitaminsPurchased',
+        'totalVitaminsObtained',
         'totalMoney',
         'totalDungeonTokens',
         'totalQuestPoints',
         'totalDiamonds',
         'totalFarmPoints',
         'totalBattlePoints',
+        'totalContestTokens',
         'totalPokemonCaptured',
         'totalPokemonDefeated',
         'totalPokemonEncountered',
@@ -175,6 +212,14 @@ export default class Statistics implements Saveable {
         'totalShinyGenderlessPokemonDefeated',
         'totalShinyGenderlessPokemonEncountered',
         'totalShinyGenderlessPokemonHatched',
+        'totalShadowPokemonCaptured',
+        'totalShadowPokemonDefeated',
+        'totalShadowMalePokemonCaptured',
+        'totalShadowMalePokemonDefeated',
+        'totalShadowFemalePokemonCaptured',
+        'totalShadowFemalePokemonDefeated',
+        'totalShadowGenderlessPokemonCaptured',
+        'totalShadowGenderlessPokemonDefeated',
         'undergroundItemsFound',
         'undergroundLayersMined',
         'undergroundDailyDealTrades',
@@ -188,6 +233,14 @@ export default class Statistics implements Saveable {
         'berryDailyDealTrades',
         'battleFrontierTotalStagesCompleted',
         'battleFrontierHighestStageCompleted',
+        'safariTimesEntered',
+        'safariRocksThrown',
+        'safariBaitThrown',
+        'safariBallsThrown',
+        'safariPokemonCaptured',
+        'safariShinyPokemonCaptured',
+        'safariStepsTaken',
+        'safariItemsObtained',
     ];
     arrayObservables = [
         'gymsDefeated',
@@ -201,11 +254,14 @@ export default class Statistics implements Saveable {
         'berriesObtained',
         'mulchesUsed',
         'temporaryBattleDefeated',
+        'contestResults',
+        'contestStyleMaster',
     ];
     // These will allow negative values (special events etc)
     objectObservables = [
         'pokemonCaptured',
         'pokemonDefeated',
+        'pokemonSeen',
         'pokemonEncountered',
         'pokemonHatched',
         'shinyPokemonCaptured',
@@ -228,6 +284,13 @@ export default class Statistics implements Saveable {
         'shinyFemalePokemonEncountered',
         'shinyMalePokemonHatched',
         'shinyFemalePokemonHatched',
+        'shadowPokemonCaptured',
+        'shadowPokemonDefeated',
+        'shadowMalePokemonCaptured',
+        'shadowFemalePokemonCaptured',
+        'shadowMalePokemonDefeated',
+        'shadowFemalePokemonDefeated',
+        'npcTalkedTo',
     ];
     // Observables that can be automatically generated
     autogeneratedObservables = [
@@ -265,7 +328,7 @@ export default class Statistics implements Saveable {
                 // This makes it so the stats observable can't be accidently changed
                 set: (
                     obj: Array<KnockoutObservable<number>>,
-                    prop: number,
+                    prop: any,
                     value: number,
                 ): boolean => {
                     const result = obj[prop](value);
@@ -313,7 +376,7 @@ export default class Statistics implements Saveable {
                 },
 
                 // This makes it so the stats observable can't be accidently changed
-                set: (obj: any, prop: number, value: number): boolean => {
+                set: (obj: any, prop: any, value: number): boolean => {
                     const result = obj[prop](value);
                     return result === failedSetValue;
                 },
@@ -345,11 +408,12 @@ export default class Statistics implements Saveable {
 
             if (typeof input === 'object' && !ko.isObservable(input)) {
                 // Recurse objects through getSaveDataValue, to get any observable values
-                return Object.entries(input).reduce((acc, [nextKey, nextValue]) => {
+                return Object.entries(input).reduce((acc, [nextKey, nextObs]) => {
+                    const nextValue = getSaveDataValue(nextObs);
                     if (nextValue === 0) {
                         return acc;
                     }
-                    acc[nextKey] = getSaveDataValue(nextValue);
+                    acc[nextKey] = nextValue;
                     return acc;
                 }, {});
             }

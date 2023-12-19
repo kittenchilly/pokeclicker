@@ -4,6 +4,15 @@ class PokedexHelper {
     public static toggleStatisticShiny = ko.observable(true);
     public static hideShinyImages = ko.observable(false);
 
+    public static initialize() {
+        Object.values(PokedexFilters).forEach((filter) => {
+            filter.value.subscribe(() => {
+                document.querySelector('#pokedex-pokemon-list-container .scrolling-div-pokedex').scrollTop = 0;
+                PokedexHelper.resetPokedexView.notifySubscribers();
+            });
+        });
+    }
+
     public static getBackgroundColors(name: PokemonNameType): string {
         const pokemon = PokemonHelper.getPokemonByName(name);
 
@@ -24,61 +33,58 @@ class PokedexHelper {
     public static pokemonSeen(id: number): KnockoutComputed<boolean> {
         return ko.pureComputed(() => {
             try {
-                return App.game.statistics.pokemonEncountered[id]() > 0 || App.game.statistics.pokemonDefeated[id]() > 0 || App.game.statistics.pokemonCaptured[id]() > 0 || App.game.party.alreadyCaughtPokemon(id);
+                return App.game.statistics.pokemonEncountered[id]() > 0 || App.game.statistics.pokemonDefeated[id]() > 0 || App.game.statistics.pokemonCaptured[id]() > 0 || App.game.party.alreadyCaughtPokemon(id) || App.game.statistics.pokemonSeen[id]() > 0;
             } catch (error) {
                 return false;
             }
         });
     }
 
-    public static filteredList: KnockoutObservableArray<Record<string, any>> = ko.observableArray([]);
+    private static cachedFilteredList: typeof pokemonList;
+    public static filteredList = ko.pureComputed<typeof pokemonList>(() => {
+        if (PokedexHelper.cachedFilteredList && modalUtils.observableState.pokedexModal !== 'show') {
+            return PokedexHelper.cachedFilteredList;
+        }
 
-    public static populateFilters() {
-        let options = $('#pokedex-filter-type1');
-        $.each(PokemonType, function () {
-            if (isNaN(Number(this)) && this != PokemonType.None) {
-                options.append($('<option />').val(PokemonType[this]).text(this));
-            }
-        });
+        PokedexHelper.cachedFilteredList = PokedexHelper.getList();
+        return PokedexHelper.cachedFilteredList;
+    })
 
-        options = $('#pokedex-filter-type2');
-        $.each(PokemonType, function () {
-            if (isNaN(Number(this)) && this != PokemonType.None) {
-                options.append($('<option />').val(PokemonType[this]).text(this));
-            }
-        });
-
-        options = $('#pokedex-filter-region');
-        for (let i = 0; i <= GameConstants.MAX_AVAILABLE_REGION; i++) {
-            options.append($('<option />').val(i).text(GameConstants.camelCaseToString(GameConstants.Region[i])));
+    public static formatSearch(value: string) {
+        if (/[^\d]/.test(value)) {
+            PokedexFilters.name.value(new RegExp(`(${/^\/.+\/$/.test(value) ? value.slice(1, -1) : GameHelper.escapeStringRegex(value)})`, 'i'));
+            PokedexFilters.id.value(-1);
+        } else {
+            PokedexFilters.id.value(value != '' ? +value : -1);
+            PokedexFilters.name.value(new RegExp('', 'i'));
         }
     }
 
-    public static updateList() {
-        PokedexHelper.filteredList(PokedexHelper.getList());
-    }
-
-    public static getList(): Array<Record<string, any>> {
-        const filter: Record<string, any> = PokedexHelper.getFilters();
-
-        const highestEncountered = App.game.statistics.pokemonEncountered.highestID;
-        const highestDefeated = App.game.statistics.pokemonDefeated.highestID;
-        const highestCaught = App.game.statistics.pokemonCaptured.highestID;
-        const highestDex = Math.max(highestEncountered, highestDefeated, highestCaught);
+    public static getList(): typeof pokemonList {
+        // Peek a computed to avoid subscribing to 1000s of statistics
+        const highestDex = ko.pureComputed(() => {
+            const highestSeen = App.game.statistics.pokemonSeen.highestID;
+            const highestEncountered = App.game.statistics.pokemonEncountered.highestID;
+            const highestDefeated = App.game.statistics.pokemonDefeated.highestID;
+            const highestCaught = App.game.statistics.pokemonCaptured.highestID;
+            return Math.max(highestSeen, highestEncountered, highestDefeated, highestCaught);
+        }).peek();
 
         return pokemonList.filter((pokemon) => {
             // Checks based on caught/shiny status
             const alreadyCaught = App.game.party.alreadyCaughtPokemon(pokemon.id);
             const alreadyCaughtShiny = App.game.party.alreadyCaughtPokemon(pokemon.id, true);
+            const alreadyCaughtShadow = App.game.party.alreadyCaughtPokemon(pokemon.id, false, true);
+            const alreadyCaughtPurified = App.game.party.alreadyCaughtPokemon(pokemon.id, false, true, true);
 
             // If the Pokemon shouldn't be unlocked yet
             const nativeRegion = PokemonHelper.calcNativeRegion(pokemon.name);
-            if (nativeRegion > GameConstants.MAX_AVAILABLE_REGION || nativeRegion == GameConstants.Region.none) {
+            if (nativeRegion > player.highestRegion() || nativeRegion == GameConstants.Region.none && !alreadyCaught) {
                 return false;
             }
 
             // If not showing this region
-            const region: (GameConstants.Region | null) = filter.region ? parseInt(filter.region, 10) : null;
+            const region: (GameConstants.Region | null) = PokedexFilters.region.value() ?? null;
             if (region != null && region != nativeRegion) {
                 return false;
             }
@@ -93,14 +99,23 @@ class PokedexHelper {
                 return false;
             }
 
-            // Check if the name contains the string
-            if (filter.name && !pokemon.name.toLowerCase().includes(filter.name.toLowerCase().trim())) {
+            // Check if the englishName or displayName contains the string
+            const displayName = PokemonHelper.displayName(pokemon.name)();
+            const filterName = PokedexFilters.name.value();
+            const partyName = App.game.party.getPokemonByName(pokemon.name)?.displayName;
+            if (!filterName.test(displayName) && !filterName.test(pokemon.name) && !(partyName != undefined && filterName.test(partyName))) {
+                return false;
+            }
+
+            // Check ID
+            const filterID = PokedexFilters.id.value();
+            if (filterID > -1 && filterID != Math.floor(pokemon.id)) {
                 return false;
             }
 
             // Check if either of the types match
-            const type1: (PokemonType | null) = filter.type1 ? parseInt(filter.type1, 10) : null;
-            const type2: (PokemonType | null) = filter.type2 ? parseInt(filter.type2, 10) : null;
+            const type1: (PokemonType | null) = PokedexFilters.type1.value();
+            const type2: (PokemonType | null) = PokedexFilters.type2.value();
             if ([type1, type2].includes(PokemonType.None)) {
                 const type = (type1 == PokemonType.None) ? type2 : type1;
                 if (!PokedexHelper.isPureType(pokemon, type)) {
@@ -109,65 +124,94 @@ class PokedexHelper {
             } else if ((type1 != null && !(pokemon as PokemonListData).type.includes(type1)) || (type2 != null && !(pokemon as PokemonListData).type.includes(type2))) {
                 return false;
             }
-
+            const hasBaseFormInSameRegion = () => pokemonList.some((p) => Math.floor(p.id) == Math.floor(pokemon.id) && p.id < pokemon.id && PokemonHelper.calcNativeRegion(p.name) == nativeRegion);
             // Alternate forms that we haven't caught yet
-            if (!alreadyCaught && pokemon.id != Math.floor(pokemon.id)) {
+            if (!alreadyCaught && pokemon.id != Math.floor(pokemon.id) && hasBaseFormInSameRegion()) {
+                return false;
+            }
+            // Hide uncaught base forms if alternate non-regional form is caught
+            if (!alreadyCaught && pokemon.id == Math.floor(pokemon.id) &&
+                App.game.party._caughtPokemon().some((p) => Math.floor(p.id) == pokemon.id && PokemonHelper.calcNativeRegion(p.name) == nativeRegion)
+            ) {
                 return false;
             }
 
+            const caughtShiny = PokedexFilters.caughtShiny.value();
+
             // Only uncaught
-            if (filter['caught-shiny'] == 'uncaught' && alreadyCaught) {
+            if (caughtShiny == 'uncaught' && alreadyCaught) {
                 return false;
             }
 
             // All caught
-            if (filter['caught-shiny'] == 'caught' && !alreadyCaught) {
+            if (caughtShiny == 'caught' && !alreadyCaught) {
                 return false;
             }
 
             // Only caught not shiny
-            if (filter['caught-shiny'] == 'caught-not-shiny' && (!alreadyCaught || alreadyCaughtShiny)) {
+            if (caughtShiny == 'caught-not-shiny' && (!alreadyCaught || alreadyCaughtShiny)) {
                 return false;
             }
 
             // Only caught shiny
-            if (filter['caught-shiny'] == 'caught-shiny' && !alreadyCaughtShiny) {
+            if (caughtShiny == 'caught-shiny' && !alreadyCaughtShiny) {
+                return false;
+            }
+
+            // Only caught not shadow
+            if (caughtShiny == 'caught-not-shadow' && (!alreadyCaught || alreadyCaughtShadow)) {
+                return false;
+            }
+
+            // Only caught shadow
+            if (caughtShiny == 'caught-shadow' && (!alreadyCaughtShadow || alreadyCaughtPurified)) {
+                return false;
+            }
+
+            // Only caught purified
+            if (caughtShiny == 'caught-purified' && !alreadyCaughtPurified) {
                 return false;
             }
 
             /* Only base form if alternate exist (Zarbi, Basculin, ...)
-             * if Mega are not alternative pokemon, this work
-             * else change condition by `filter['hide-alternate'] && (!Number.isInteger(pokemon.id) || Math.sign(pokemon.id) === -1)`
+             * Mainline regional forms are shown as they are part of dex completion
              */
-            if (filter['hide-alternate'] && !Number.isInteger(pokemon.id)) {
+            if (PokedexFilters.hideAlternate.value() && !Number.isInteger(pokemon.id) && hasBaseFormInSameRegion()) {
                 return false;
             }
 
             // Only pokemon with a hold item
-            if (filter['held-item'] && !BagHandler.displayName((pokemon as PokemonListData).heldItem)) {
+            if (PokedexFilters.heldItem.value() && !BagHandler.displayName((pokemon as PokemonListData).heldItem)) {
                 return false;
             }
 
             // Only pokemon uninfected by pokerus || None
-            if (filter['status-pokerus'] != -1 && filter['status-pokerus'] != App.game.party.getPokemon(pokemon.id)?.pokerus) {
+            if (PokedexFilters.statusPokerus.value() != -1 && PokedexFilters.statusPokerus.value() != App.game.party.getPokemon(pokemon.id)?.pokerus) {
+                return false;
+            }
+
+            // Only pokemon with selected category
+            if (PokedexFilters.category.value() != -1 && PokedexFilters.category.value() != App.game.party.getPokemon(pokemon.id)?.category) {
+                return false;
+            }
+
+            const uniqueTransformation = PokedexFilters.uniqueTransformation.value();
+            // Only Base Pokémon with Mega available
+            if (uniqueTransformation == 'mega-available' && !PokemonHelper.hasMegaEvolution(pokemon.name)) {
+                // Another option: !(pokemon as PokemonListData).evolutions?.some((p) => p.restrictions.some(p => p instanceof MegaEvolveRequirement))
+                return false;
+            }
+            // Only Base Pokémon without Mega Evolution
+            if (uniqueTransformation == 'mega-unobtained' && !PokemonHelper.hasUncaughtMegaEvolution(pokemon.name)) {
+                return false;
+            }
+            // Only Mega Pokémon
+            if (uniqueTransformation == 'mega-evolution' && !PokemonHelper.isMegaEvolution(pokemon.name)) {
                 return false;
             }
 
             return true;
-        });
-    }
-
-    private static getFilters() {
-        const res: Record<string, any> = {};
-        res.name = $('#nameFilter').val();
-        res.type1 = $('#pokedex-filter-type1').val();
-        res.type2 = $('#pokedex-filter-type2').val();
-        res.region = $('#pokedex-filter-region').val();
-        res['caught-shiny'] = $('#pokedex-filter-shiny-caught').val();
-        res['status-pokerus'] = $('#pokedex-filter-pokerus-status').val();
-        res['held-item'] = $('#pokedex-filter-held-item').is(':checked');
-        res['hide-alternate'] = $('#pokedex-filter-hide-alternate').is(':checked');
-        return res;
+        }) as typeof pokemonList;
     }
 
     // Gender ratio
@@ -184,6 +228,11 @@ class PokedexHelper {
     private static isPureType(pokemon: PokemonListData, type: (PokemonType | null)): boolean {
         return (pokemon.type.length === 1 && (type == null || pokemon.type[0] === type));
     }
+
+    // Flag for the LazyLoader
+    public static resetPokedexView = ko.pureComputed(() => {
+        return modalUtils.observableState.pokedexModalObservable;
+    });
 }
 
 $(document).ready(() => {

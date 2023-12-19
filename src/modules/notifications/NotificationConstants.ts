@@ -17,6 +17,9 @@ const NotificationConstants = {
             battle_item_timer: new Sound('battle_item_timer', 'Battle item about to wear off'),
             underground_energy_full: new Sound('underground_energy_full', 'Mining energy reached maximum capacity'),
             battle_frontier: new Sound('battle_frontier', 'Battle Frontier'),
+            dream_orb: new Sound('dream_orb', 'Opening Dream Orb'),
+            pokerus: new Sound('pokerus_resistant', 'Pokémon has become Resistant to Pokérus'),
+            max_flow: new Sound('max_flow', 'Maximum Flow has accumulated at the Purify Chamber'),
         },
         Hatchery: {
             ready_to_hatch: new Sound('ready_to_hatch', 'Egg ready to hatch'),
@@ -56,6 +59,7 @@ const NotificationConstants = {
             hatched: new NotificationSetting('notification.hatched', 'Egg hatched', true),
             hatched_shiny: new NotificationSetting('notification.hatched_shiny', 'Egg hatched a shiny', true),
             empty_queue: new NotificationSetting('empty_queue', 'Hatchery queue is empty', true),
+            hatchery_helper: new NotificationSetting('notification.hatchery_helper', 'Hatchery Helper Hired/Fired', true),
         },
         Dungeons: {
             dungeon_complete: new NotificationSetting('notification.dungeon_complete', 'Dungeon completed', true),
@@ -84,6 +88,7 @@ const NotificationConstants = {
             berry_dropped: new NotificationSetting('notification.berry_dropped', 'Berry has been dropped', true),
             mulch_ran_out: new NotificationSetting('notification.mulch_ran_out', 'Mulch has run out', true),
             wandering_pokemon: new NotificationSetting('notification.wandering_pokemon', 'Wandering Pokémon encountered', true),
+            farm_hand: new NotificationSetting('notification.farm_hand', 'Farm Hand Hired/Fired', true),
         },
     },
 };

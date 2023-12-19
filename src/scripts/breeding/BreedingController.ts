@@ -97,7 +97,7 @@ class BreedingController {
             $('#breedingModal').modal('show');
         } else {
             Notifier.notify({
-                message: 'You do not have access to the Day Care yet.\n<i>Clear Route 5 first.</i>',
+                message: 'You do not have access to the Day Care yet.\n<i>Clear Route 3 first.</i>',
                 type: NotificationConstants.NotificationOption.warning,
             });
         }
@@ -135,62 +135,17 @@ class BreedingController {
         return SeededRand.fromArray(this.spotTypes);
     }
 
-    public static visible(partyPokemon: PartyPokemon) {
-        return ko.pureComputed(() => {
-            // Only breedable Pokemon
-            if (partyPokemon.breeding || partyPokemon.level < 100) {
-                return false;
-            }
-
-            if (!BreedingFilters.search.value().test(partyPokemon.name)) {
-                return false;
-            }
-
-            // Check based on category
-            if (BreedingFilters.category.value() >= 0) {
-                if (partyPokemon.category !== BreedingFilters.category.value()) {
-                    return false;
-                }
-            }
-
-            // Check based on shiny status
-            if (BreedingFilters.shinyStatus.value() >= 0) {
-                if (+partyPokemon.shiny !== BreedingFilters.shinyStatus.value()) {
-                    return false;
-                }
-            }
-
-            // Check based on native region
-            if (!(2 ** PokemonHelper.calcNativeRegion(partyPokemon.name) & BreedingFilters.region.value())) {
-                return false;
-            }
-
-            // check based on Pokerus status
-            if (BreedingFilters.pokerus.value() > -1) {
-                if (partyPokemon.pokerus !== BreedingFilters.pokerus.value()) {
-                    return false;
-                }
-            }
-
-            // Check if either of the types match
-            const type1: (PokemonType | null) = BreedingFilters.type1.value() > -2 ? BreedingFilters.type1.value() : null;
-            const type2: (PokemonType | null) = BreedingFilters.type2.value() > -2 ? BreedingFilters.type2.value() : null;
-            if (type1 !== null || type2 !== null) {
-                const { type: types } = pokemonMap[partyPokemon.name];
-                if ([type1, type2].includes(PokemonType.None)) {
-                    const type = (type1 == PokemonType.None) ? type2 : type1;
-                    if (!BreedingController.isPureType(partyPokemon, type)) {
-                        return false;
-                    }
-                } else if ((type1 !== null && !types.includes(type1)) || (type2 !== null && !types.includes(type2))) {
-                    return false;
-                }
-            }
-            return true;
-        });
+    public static formatSearch(value: string) {
+        if (/[^\d]/.test(value)) {
+            BreedingFilters.name.value(new RegExp(`(${/^\/.+\/$/.test(value) ? value.slice(1, -1) : GameHelper.escapeStringRegex(value)})`, 'i'));
+            BreedingFilters.id.value(-1);
+        } else {
+            BreedingFilters.id.value(value != '' ? +value : -1);
+            BreedingFilters.name.value(new RegExp('', 'i'));
+        }
     }
 
-    private static isPureType(pokemon: PartyPokemon, type: (PokemonType | null)): boolean {
+    public static isPureType(pokemon: PartyPokemon, type: (PokemonType | null)): boolean {
         const pokemonData = pokemonMap[pokemon.name];
         return ((type == null || pokemonData.type[0] === type) && (pokemonData.type[1] == undefined || pokemonData.type[1] == PokemonType.None));
     }
@@ -202,15 +157,15 @@ class BreedingController {
         const pokemonData = pokemonMap[pokemon.name];
         switch (this.displayValue()) {
             case 'attack': return `Attack: ${Math.floor(pokemon.attack * BreedingController.calculateRegionalMultiplier(pokemon)).toLocaleString('en-US')}`;
-            case 'attackBonus': return `Attack Bonus: ${Math.floor((pokemon.baseAttack * (GameConstants.BREEDING_ATTACK_BONUS / 100) + pokemon.proteinsUsed()) * BreedingController.calculateRegionalMultiplier(pokemon)).toLocaleString('en-US')}`;
+            case 'attackBonus': return `Attack Bonus: ${Math.floor(pokemon.getBreedingAttackBonus() * BreedingController.calculateRegionalMultiplier(pokemon)).toLocaleString('en-US')}`;
             case 'baseAttack': return `Base Attack: ${pokemon.baseAttack.toLocaleString('en-US')}`;
-            case 'eggSteps': return `Egg Steps: ${App.game.breeding.getSteps(pokemonData.eggCycles).toLocaleString('en-US')}`;
+            case 'eggSteps': return `Egg Steps: ${pokemon.getEggSteps().toLocaleString('en-US')}`;
             case 'timesHatched': return `Hatches: ${App.game.statistics.pokemonHatched[pokemonData.id]().toLocaleString('en-US')}`;
-            case 'breedingEfficiency': return `Efficiency: ${((pokemon.baseAttack * (GameConstants.BREEDING_ATTACK_BONUS / 100) + pokemon.proteinsUsed()) * BreedingController.calculateRegionalMultiplier(pokemon) / pokemonMap[pokemon.name].eggCycles).toLocaleString('en-US', { maximumSignificantDigits: 2 })}`;
-            case 'stepsPerAttack': return `Steps/Att: ${(App.game.breeding.getSteps(pokemonMap[pokemon.name].eggCycles) / ((pokemon.baseAttack * (GameConstants.BREEDING_ATTACK_BONUS / 100) + pokemon.proteinsUsed()) * BreedingController.calculateRegionalMultiplier(pokemon))).toLocaleString('en-US', { maximumSignificantDigits: 2 })}`;
+            case 'breedingEfficiency': return `Efficiency: ${(pokemon.breedingEfficiency() * BreedingController.calculateRegionalMultiplier(pokemon)).toLocaleString('en-US', { maximumSignificantDigits: 2 })}`;
+            case 'stepsPerAttack': return `Steps/Att: ${(pokemon.getEggSteps() / (pokemon.getBreedingAttackBonus() * BreedingController.calculateRegionalMultiplier(pokemon))).toLocaleString('en-US', { maximumSignificantDigits: 2 })}`;
             case 'dexId': return `#${pokemon.id <= 0 ? '???' : Math.floor(pokemon.id).toString().padStart(3,'0')}`;
-            case 'proteins': return `Proteins: ${pokemon.proteinsUsed()}`;
-            case 'evs': return `EVs: ${pokemon.evs()}`;
+            case 'vitamins': return `Vitamins: ${pokemon.totalVitaminsUsed()}`;
+            case 'evs': return `EVs: ${pokemon.evs().toLocaleString('en-US')}`;
         }
     }
 

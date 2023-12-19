@@ -1,7 +1,7 @@
 ///<reference path="../../declarations/requirements/AchievementRequirement.d.ts"/>
 
 class CaughtUniqueShinyPokemonsByRegionRequirement extends AchievementRequirement {
-    private region: GameConstants.Region;
+    public region: GameConstants.Region;
     constructor(region: GameConstants.Region, amount = 0, option: GameConstants.AchievementOption = GameConstants.AchievementOption.more) {
         super(amount || PokemonHelper.calcUniquePokemonsByRegion(region), option, GameConstants.AchievementType['Shiny Pokemon']);
         this.region = region;
@@ -13,5 +13,9 @@ class CaughtUniqueShinyPokemonsByRegionRequirement extends AchievementRequiremen
 
     public hint(): string {
         return `${this.requiredValue} unique Pokémon need to be caught.`;
+    }
+
+    public toString(): string {
+        return `${super.toString()} ${this.region}`;
     }
 }

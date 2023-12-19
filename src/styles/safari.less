@@ -2,8 +2,8 @@
   height:32px;
   width:32px !important;
   max-width: 32px;
-  margin: 0px !important;
-  padding:0px !important;
+  margin: 0 !important;
+  padding:0 !important;
   text-align: center;
 }
 
@@ -16,10 +16,6 @@
     font-size: 40px;
   }
 
-  .modal-body {
-    overflow: hidden;
-  }
-
   .pokemonSprite {
     position: absolute;
     width: 40px;
@@ -28,21 +24,61 @@
 }
 
 #sprite {
-  height: 32px;
-  width: 32px;
-  z-index: 1;
+  height: 56px;
+  width: 56px;
+  z-index: 2;
   background-image: url('../assets/images/safari/player.png');
   background-size: 400% 400%;
+
+  &.water {
+    background-image: url('../assets/images/safari/player-surf.png');
+
+    /* Idle animation */
+    &.walkdown {
+      animation: walkdown 4s steps(4) infinite;
+    }
+
+    @keyframes walkdown {
+      100% { background-position: 133.333% 0.00000%; }
+    }
+
+    &.walkleft {
+      animation: walkleft 4s steps(4) infinite;
+    }
+
+    @keyframes walkleft {
+      100% { background-position: 133.333% 33.3333%; }
+    }
+
+    &.walkright {
+      animation: walkright 4s steps(4) infinite;
+    }
+
+    @keyframes walkright {
+      100% { background-position: 133.333% 66.6666%; }
+    }
+
+    &.walkup {
+      animation: walkup 4s steps(4) infinite;
+    }
+
+    @keyframes walkup {
+      100% { background-position: 133.333% 100.000%; }
+    }
+  }
 
   &.walkdown {
     background-position: 0.00000% 0.00000%;
   }
+
   &.walkleft {
     background-position: 0.00000% 33.3333%;
   }
+
   &.walkright {
     background-position: 0.00000% 66.6666%;
   }
+
   &.walkup {
     background-position: 0.00000% 100.000%;
   }
@@ -51,24 +87,31 @@
     &.walkdown {
       animation: walkdown 0.6s steps(4) infinite;
     }
+
     @keyframes walkdown {
       100% { background-position: 133.333% 0.00000%; }
     }
+
     &.walkleft {
       animation: walkleft 0.6s steps(4) infinite;
     }
+
     @keyframes walkleft {
       100% { background-position: 133.333% 33.3333%; }
     }
+
     &.walkright {
       animation: walkright 0.6s steps(4) infinite;
     }
+
     @keyframes walkright {
       100% { background-position: 133.333% 66.6666%; }
     }
+
     &.walkup {
       animation: walkup 0.6s steps(4) infinite;
     }
+
     @keyframes walkup {
       100% { background-position: 133.333% 100.000%; }
     }
@@ -77,14 +120,14 @@
 
 .bounce {
   position: relative;
-  display:inline-block;
+  display: inline-block;
   transform: translateY(62px);
   animation-name: bounceall;
-  animation-duration: inherit;
   animation-timing-function: ease-in-out;
 }
+
 @keyframes bounceall{
-  0%{transform: translateY(0px)}
+  0%{transform: translateY(0)}
   20%{transform: translateY(62px)}
   40%{transform: translateY(22px)}
   55%{transform: translateY(62px)}
@@ -97,9 +140,9 @@
 
 .safari-roll-left {
   animation-name: roll-left;
-  animation-duration: inherit;
   animation-timing-function: ease-in-out;
 }
+
 @keyframes roll-left{
   0%{transform: rotate(0deg);}
   50%{transform: rotate(-45deg) translate(-8px, -10px);}
@@ -108,11 +151,11 @@
 
 .safari-roll-right {
   animation-name: roll-right;
-  animation-duration: inherit;
   animation-timing-function: ease-in-out;
 }
+
 @keyframes roll-right{
-  0%{transform: rotate(0deg);}
+  0%{transform: rotate(0deg); }
   50%{transform: rotate(45deg) translate(8px, -10px);}
   100%{transform: rotate(0deg);}
 }
@@ -134,14 +177,15 @@
 
 .spin {
   animation-name: spin;
-  animation-duration: 750ms;
-  animation-iteration-count: infinite;
+  animation-iteration-count: 1;
   animation-timing-function: linear;
 }
+
 @keyframes spin {
     from {
         transform:rotate(0deg);
     }
+
     to {
         transform:rotate(360deg);
     }
@@ -152,7 +196,7 @@
 }
 
 #safariBody {
-  background-image:url('../assets/images/safari/0.png');
+  background-image:url('../assets/images/safari/tiles/ground.png');
 }
 
 #safariBattleModal {
@@ -160,17 +204,39 @@
     width: 100%;
     text-align: center;
   }
+
   .modal-body.p-0 {
     overflow: hidden;
   }
+
   .pageItemFooter {
     @media (max-width: 768px) {
       font-size: 25px;
     }
+
+    /* above Safari particles */
+    z-index: 10000;
   }
+
   .enemy {
     @media (max-width: 768px) {
       margin-top: 50px;
     }
   }
+
+  .modal-footer.p-0 {
+    .dropdown-menu {
+      z-index: 10001;
+    }
+  }
+}
+
+.safari-item {
+    background-image: url("../assets/images/safari/item.png");
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    background-size: 100% 100%;
+    image-rendering: pixelated;
+    z-index: 1;
 }

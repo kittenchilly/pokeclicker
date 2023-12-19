@@ -23,7 +23,7 @@ class TemporaryBattleRunner {
         Battle.route = 0;
         Battle.catching(!(battle.optionalArgs.isTrainerBattle ?? true));
         TemporaryBattleBattle.battle = battle;
-        TemporaryBattleBattle.totalPokemons(battle.pokemons.length);
+        TemporaryBattleBattle.totalPokemons(battle.getPokemonList().length);
         TemporaryBattleBattle.index(0);
         TemporaryBattleBattle.generateNewEnemy();
         App.game.gameState = GameConstants.GameState.temporaryBattle;
@@ -109,4 +109,10 @@ class TemporaryBattleRunner {
         return (Math.ceil(TemporaryBattleRunner.timeLeft() / 100) / 10).toFixed(1);
     })
 
+    public static getEnvironmentArea() {
+        const battle = TemporaryBattleRunner.battleObservable();
+        return battle?.optionalArgs.environment
+            ?? battle?.parent?.name
+            ?? battle?.optionalArgs.returnTown;
+    }
 }

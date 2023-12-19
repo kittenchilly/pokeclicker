@@ -40,9 +40,11 @@ class Breeding implements Feature {
         BreedingFilters.type2.value(Settings.getSetting('breedingTypeFilter2').value);
         BreedingFilters.shinyStatus.value(Settings.getSetting('breedingShinyFilter').value);
         BreedingFilters.pokerus.value(Settings.getSetting('breedingPokerusFilter').value);
+        BreedingFilters.uniqueTransformation.value(Settings.getSetting('breedingUniqueTransformationFilter').value);
         BreedingController.displayValue(Settings.getSetting('breedingDisplayFilter').value);
         BreedingController.regionalAttackDebuff(+Settings.getSetting('breedingRegionalAttackDebuffSetting').value);
         BreedingController.queueSizeLimit(+Settings.getSetting('breedingQueueSizeSetting').value);
+        BreedingFilters.uniqueTransformation.value.subscribe((v) => Settings.setSettingByName('breedingUniqueTransformationFilter', v));
     }
 
     initialize(): void {
@@ -55,9 +57,10 @@ class Breeding implements Feature {
             ['Fennekin', 'Litleo'],
             ['Litten', 'Salandit'],
             ['Scorbunny', 'Sizzlipede'],
+            ['Fuecoco', 'Charcadet'],
         ];
         this.hatchList[EggType.Water] = [
-            ['Squirtle', 'Lapras', 'Staryu', 'Psyduck'],
+            ['Squirtle', 'Lapras', 'Staryu', 'Slowpoke'],
             ['Totodile', 'Wooper', 'Marill', 'Qwilfish'],
             ['Mudkip', 'Feebas', 'Clamperl'],
             ['Piplup', 'Finneon', 'Buizel'],
@@ -65,16 +68,18 @@ class Breeding implements Feature {
             ['Froakie', 'Clauncher', 'Skrelp'],
             ['Popplio', 'Wimpod', 'Mareanie'],
             ['Sobble', 'Chewtle', 'Arrokuda'],
+            ['Quaxly'],
         ];
         this.hatchList[EggType.Grass] = [
-            ['Bulbasaur', 'Oddish', 'Tangela', 'Bellsprout'],
+            ['Bulbasaur', 'Oddish', 'Tangela', 'Paras'],
             ['Chikorita', 'Hoppip', 'Sunkern'],
             ['Treecko', 'Tropius', 'Roselia'],
-            ['Turtwig', 'Carnivine', 'Budew'],
+            ['Turtwig', 'Snover', 'Budew'],
             ['Snivy', 'Pansage', 'Maractus'],
             ['Chespin', 'Skiddo', 'Phantump'],
             ['Rowlet', 'Morelull', 'Fomantis'],
             ['Grookey', 'Gossifleur','Applin'],
+            ['Sprigatito'],
         ];
         this.hatchList[EggType.Fighting] = [
             ['Hitmonlee', 'Hitmonchan', 'Machop', 'Mankey'],
@@ -105,6 +110,17 @@ class Breeding implements Feature {
             ['Goomy', 'Sliggoo', 'Goodra'],
             ['Turtonator', 'Drampa', 'Jangmo-o', 'Hakamo-o', 'Kommo-o'],
             ['Dreepy', 'Drakloak', 'Dragapult', 'Duraludon'],
+            ['Frigibax', 'Arctibax', 'Baxcalibur'],
+        ];
+        this.hatchList[EggType.Mystery] = [
+            ['Gastly', 'Jigglypuff', 'Geodude', 'Doduo'],
+            ['Yanma', 'Stantler'],
+            ['Trapinch', 'Sableye', 'Spoink'],
+            ['Stunky', 'Bronzor'],
+            ['Vanillite', 'Drilbur'],
+            ['Carbink', 'Honedge'],
+            ['Mudbray', 'Rockruff'],
+            ['Rolycoly', 'Milcery'],
         ];
         BreedingController.initialize();
     }
@@ -170,16 +186,27 @@ class Breeding implements Feature {
         return slots && this._queueList().length < slots;
     }
 
-    public gainEgg(e: Egg, isHelper = false) {
+    public gainEgg(e: Egg, eggSlot = -1) {
         if (e.isNone()) {
             return false;
         }
-        for (let i = 0; i < this._eggList.length; i++) {
-            if (this._eggList[i]().isNone() && (isHelper || !this.hatcheryHelpers.hired()[i])) {
-                this._eggList[i](e);
+
+        if (eggSlot === -1) {
+            // Throw egg in the first empty non-Helper slot
+            for (let i = 0; i < this._eggList.length; i++) {
+                if (this._eggList[i]().isNone() && !this.hatcheryHelpers.hired()[i]) {
+                    this._eggList[i](e);
+                    return true;
+                }
+            }
+        } else {
+            // Throw egg in the Helper slot if it's empty
+            if (this._eggList[eggSlot]?.().isNone()) {
+                this._eggList[eggSlot](e);
                 return true;
             }
         }
+
         console.error(`Error: Could not place ${EggType[e.type]} Egg`);
         return false;
     }
@@ -198,22 +225,46 @@ class Breeding implements Feature {
 
         amount = Math.round(amount);
         let index = this.eggList.length;
+        let emptySlots = 0;
         while (index-- > 0) {
             const helper = this.hatcheryHelpers.hired()[index];
             if (helper) {
                 continue;
             }
             const egg = this.eggList[index]();
+            if (egg.isNone() && index + 1 <= this._eggSlots()) {
+                emptySlots++;
+                continue;
+            }
             const partyPokemon = egg.partyPokemon();
             if (!egg.isNone() && partyPokemon && partyPokemon.canCatchPokerus() && partyPokemon.pokerus == GameConstants.Pokerus.Uninfected) {
                 partyPokemon.calculatePokerus(index);
             }
             egg.addSteps(amount, this.multiplier);
             if (this._queueList().length && egg.canHatch()) {
-                this.hatchPokemonEgg(index);
+                this.hatchPokemonEgg(index, false);
+                emptySlots++;
             }
         }
+
         this.hatcheryHelpers.addSteps(amount, this.multiplier);
+
+        if (emptySlots) {
+            // Check for any empty slots between incubating eggs, move them if a gap is found.
+            // For example, if the first empty slot is index 2 but there are 3 slots with eggs then there is a gap.
+            const firstEmptySlot = this._eggList.findIndex((egg, i) => egg().isNone() && !this.hatcheryHelpers.hired()[i]);
+            if (firstEmptySlot > -1) {
+                const slotsWithEggs = this._eggList.filter((egg, i) => !egg().isNone() && !this.hatcheryHelpers.hired()[i]).length;
+                if (firstEmptySlot < slotsWithEggs) {
+                    this.moveEggs();
+                }
+            }
+
+            // Fill empty egg slots from queue.
+            while (this._queueList().length && emptySlots--) {
+                this.nextEggFromQueue();
+            }
+        }
     }
 
     private getStepMultiplier() {
@@ -281,17 +332,18 @@ class Breeding implements Feature {
         }
     }
 
-    public gainPokemonEgg(pokemon: PartyPokemon | PokemonListData, isHelper = false): boolean {
-        if (!this.hasFreeEggSlot(isHelper)) {
+    public gainPokemonEgg(pokemon: PartyPokemon | PokemonListData, eggSlot = -1): boolean {
+        if (eggSlot === -1 && !this.hasFreeEggSlot()) {
+            // Check that an empty, non-Helper slot exists
             Notifier.notify({
                 message: 'You don\'t have any free egg slots',
                 type: NotificationConstants.NotificationOption.warning,
             });
             return false;
         }
-        const egg = this.createEgg(pokemon.id);
 
-        const success = this.gainEgg(egg, isHelper);
+        const egg = this.createEgg(pokemon.id);
+        const success = this.gainEgg(egg, eggSlot);
 
         if (success && pokemon instanceof PartyPokemon) {
             pokemon.breeding = true;
@@ -300,33 +352,42 @@ class Breeding implements Feature {
         return success;
     }
 
-    public hatchPokemonEgg(index: number): void {
+    public hatchPokemonEgg(index: number, nextEgg = true): void {
         const egg: Egg = this._eggList[index]();
         const hatched = egg.hatch();
         if (hatched) {
             this._eggList[index](new Egg());
-            this.moveEggs();
-            if (this._queueList().length) {
-                const nextEgg = this.createEgg(this._queueList.shift());
-                this.gainEgg(nextEgg);
-                if (!this._queueList().length) {
-                    Notifier.notify({
-                        message: 'Hatchery queue is empty',
-                        type: NotificationConstants.NotificationOption.success,
-                        timeout: 1e4,
-                        sound: NotificationConstants.NotificationSound.Hatchery.empty_queue,
-                        setting: NotificationConstants.NotificationSetting.Hatchery.empty_queue,
-                    });
+            if (nextEgg) {
+                this.moveEggs();
+                if (this._queueList().length) {
+                    this.nextEggFromQueue();
                 }
             }
         }
     }
 
-    public moveEggs(): void {
-        const tempEggList = App.game.breeding._eggList.filter(egg => egg().type != EggType.None);
+    private nextEggFromQueue(): void {
+        const nextEgg = this.createEgg(this._queueList.shift());
+        this.gainEgg(nextEgg);
+        if (!this._queueList().length) {
+            Notifier.notify({
+                message: 'Hatchery queue is empty.',
+                type: NotificationConstants.NotificationOption.success,
+                timeout: 1e4,
+                sound: NotificationConstants.NotificationSound.Hatchery.empty_queue,
+                setting: NotificationConstants.NotificationSetting.Hatchery.empty_queue,
+            });
+        }
+    }
 
+    public moveEggs(): void {
+        const tempEggList = App.game.breeding._eggList.filter((egg, i) => egg().type != EggType.None && !this.hatcheryHelpers.hired()[i]);
+        let tempEggIndex = 0;
         this._eggList.forEach((egg, index) => {
-            egg(tempEggList[index] ? tempEggList[index]() : new Egg());
+            if (this.hatcheryHelpers.hired()[index]) {
+                return;
+            }
+            egg(tempEggList[tempEggIndex] ? tempEggList[tempEggIndex++]() : new Egg());
         });
     }
 
@@ -378,7 +439,7 @@ class Breeding implements Feature {
         if (eggCycles === undefined) {
             return 500;
         } else {
-            return eggCycles * 40;
+            return eggCycles * GameConstants.EGG_CYCLE_MULTIPLIER;
         }
     }
 
@@ -480,7 +541,7 @@ class Breeding implements Feature {
 
     public usableQueueSlots = ko.pureComputed(() => {
         const queueSizeSetting = BreedingController.queueSizeLimit();
-        return queueSizeSetting > -1 ? queueSizeSetting : this.queueSlots();
+        return queueSizeSetting > -1 ? Math.min(queueSizeSetting, this.queueSlots()) : this.queueSlots();
     });
 
     public updateQueueSizeLimit(size: number) {
@@ -492,5 +553,13 @@ class Breeding implements Feature {
                 this.removeFromQueue(i - 1);
             }
         }
+    }
+
+    public fireAllButtonTooltip(): string {
+        let str = '';
+        this.hatcheryHelpers.hired().forEach(x => {
+            str += `<img src="assets/images/profile/trainer-${x.trainerSprite}.png" width="20px">&nbsp; ${x.name} <img src="assets/images/currency/${GameConstants.Currency[x.cost.currency]}.svg" width="20px">&nbsp;${(x.cost.amount).toLocaleString('en-US')} <br/>`;
+        });
+        return str;
     }
 }

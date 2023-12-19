@@ -25,6 +25,7 @@ class HatcheryHelper {
     public trainerSprite = 0;
     public hired: KnockoutObservable<boolean> = ko.observable(false).extend({ boolean: null });
     public tooltip: KnockoutComputed<string>;
+    public fireAllButtonTooltip: KnockoutComputed<string>;
     public sortOption: KnockoutObservable<SortOptions> = ko.observable(SortOptions.id).extend({ numeric: 0 });
     public sortDirection: KnockoutObservable<boolean> = ko.observable(false).extend({ boolean: null });
     public hatched: KnockoutObservable<number> = ko.observable(0).extend({ numeric: 0 });
@@ -33,6 +34,8 @@ class HatcheryHelper {
     public attackEfficiency: KnockoutObservable<number> = ko.observable(0).extend({ numeric: 1 });
     public prevBonus: KnockoutObservable<number> = ko.observable(0).extend({ numeric: 0 });
     public nextBonus: KnockoutObservable<number> = ko.observable(1).extend({ numeric: 0 });
+    public categories: KnockoutObservableArray<number> = ko.observableArray([]);
+    public useHatcheryFilters: KnockoutObservable<boolean> = ko.observable(true);
     // public level: number;
     // public experience: number;
 
@@ -104,6 +107,7 @@ class HatcheryHelper {
             message: 'Thanks for hiring me,\nI won\'t let you down!',
             type: NotificationConstants.NotificationOption.success,
             timeout: 30 * GameConstants.SECOND,
+            setting: NotificationConstants.NotificationSetting.Hatchery.hatchery_helper,
         });
     }
 
@@ -113,6 +117,7 @@ class HatcheryHelper {
             message: 'Thanks for the work.\nLet me know when you\'re hiring again!',
             type: NotificationConstants.NotificationOption.info,
             timeout: 30 * GameConstants.SECOND,
+            setting: NotificationConstants.NotificationSetting.Hatchery.hatchery_helper,
         });
         this.hired(false);
         return;
@@ -128,7 +133,13 @@ class HatcheryHelper {
                 timeout: 30 * GameConstants.MINUTE,
             });
             this.hired(false);
-            App.game.logbook.newLog(LogBookTypes.OTHER, `You ran out of ${this.currencyString()} to pay Hatchery Helper ${this.name}!`);
+            App.game.logbook.newLog(
+                LogBookTypes.OTHER,
+                createLogContent.unableToPayHatcheryHelper({
+                    currency: this.currencyString(),
+                    name: this.name,
+                })
+            );
             return;
         }
     }
@@ -140,6 +151,8 @@ class HatcheryHelper {
             sortOption: this.sortOption(),
             sortDirection: this.sortDirection(),
             hatched: this.hatched(),
+            categories: this.categories(),
+            useHatcheryFilters: this.useHatcheryFilters(),
         };
     }
 
@@ -151,6 +164,8 @@ class HatcheryHelper {
         this.sortOption(json.sortOption || 0);
         this.sortDirection(json.sortDirection || false);
         this.hatched(json.hatched || 0);
+        this.categories(json.categories || []);
+        this.useHatcheryFilters(json.useHatcheryFilters ?? true);
     }
 }
 
@@ -199,15 +214,30 @@ class HatcheryHelpers {
 
             // Check if egg slot empty
             if (egg.isNone()) {
-                // Get the currently selected region
-                const currentRegion = +Settings.getSetting('breedingRegionalAttackDebuffSetting').value;
-
                 // Check if there's a pokemon we can chuck into an egg
-                const pokemon = [...App.game.party.caughtPokemon]
-                    .sort(PartyController.compareBy(helper.sortOption(), helper.sortDirection(), currentRegion))
-                    .find(p => BreedingController.visible(p)());
+                const compare = PartyController.compareBy(helper.sortOption(), helper.sortDirection(),
+                    App.game.challenges.list.regionalAttackDebuff.active() ? BreedingController.regionalAttackDebuff() : GameConstants.Region.none);
+
+                const categories = helper.categories();
+                const useHatcheryFilters = helper.useHatcheryFilters();
+                const pokemon = App.game.party.caughtPokemon.reduce((best, pokemon) => {
+                    if (useHatcheryFilters && !pokemon.isHatchable()) {
+                        return best;
+                    }
+                    if (!useHatcheryFilters && (pokemon.breeding || pokemon.level < 100)) {
+                        return best;
+                    }
+                    if (categories.length && categories.indexOf(pokemon.category) === -1) {
+                        return best;
+                    }
+                    if (best === null) {
+                        return pokemon;
+                    }
+                    return compare(best, pokemon) <= 0 ? best : pokemon;
+                }, null);
+
                 if (pokemon) {
-                    this.hatchery.gainPokemonEgg(pokemon, true);
+                    this.hatchery.gainPokemonEgg(pokemon, index);
                     // Charge the player when we put a pokemon in the hatchery
                     helper.charge();
                     // Increment our hatched counter

@@ -14,11 +14,12 @@ class DungeonRunner {
     public static currentTileType;
     public static encountersWon: KnockoutObservable<number> = ko.observable(0);
     public static fightingBoss: KnockoutObservable<boolean> = ko.observable(false);
-    public static defeatedBoss: KnockoutObservable<boolean> = ko.observable(false);
+    public static defeatedBoss: KnockoutObservable<string> = ko.observable(null);
     public static dungeonFinished: KnockoutObservable<boolean> = ko.observable(false);
     public static fightingLootEnemy: boolean;
+    public static continuousInteractionInput = false;
 
-    public static initializeDungeon(dungeon) {
+    public static initializeDungeon(dungeon: Dungeon) {
         if (!dungeon.isUnlocked()) {
             return false;
         }
@@ -37,16 +38,29 @@ class DungeonRunner {
         DungeonBattle.trainerPokemonIndex(0);
         DungeonBattle.enemyPokemon(null);
         DungeonRunner.timeBonus(FluteEffectRunner.getFluteMultiplier(GameConstants.FluteItemType.Time_Flute));
-        DungeonRunner.timeLeft(GameConstants.DUNGEON_TIME * this.timeBonus());
+        DungeonRunner.timeLeft(GameConstants.DUNGEON_TIME * DungeonRunner.timeBonus());
 
         DungeonRunner.timeLeftPercentage(100);
         // Dungeon size increases with each region
         let dungeonSize = GameConstants.BASE_DUNGEON_SIZE + (dungeon.optionalParameters.dungeonRegionalDifficulty ?? player.region);
         // Decrease dungeon size by 1 for every 10, 100, 1000 etc completes
         dungeonSize -= Math.max(0, App.game.statistics.dungeonsCleared[GameConstants.getDungeonIndex(DungeonRunner.dungeon.name)]().toString().length - 1);
-        const flash = App.game.statistics.dungeonsCleared[GameConstants.getDungeonIndex(DungeonRunner.dungeon.name)]() >= 200;
+        const flash = DungeonRunner.getFlash(DungeonRunner.dungeon.name);
+        const generateChestLoot = () => {
+            const clears = App.game.statistics.dungeonsCleared[GameConstants.getDungeonIndex(dungeon.name)]();
+            const debuffed = (dungeon.optionalParameters?.dungeonRegionalDifficulty ?? GameConstants.getDungeonRegion(dungeon.name)) < player.highestRegion() - 2;
+            // Ignores debuff on first attempt to get loot that ignores debuff.
+            let tier = dungeon.getRandomLootTier(clears);
+            let loot = dungeon.getRandomLoot(tier);
+            if (!loot.ignoreDebuff && debuffed) {
+                tier = dungeon.getRandomLootTier(clears, debuffed, true);
+                loot = dungeon.getRandomLoot(tier, true);
+            }
+
+            return { tier, loot };
+        };
         // Dungeon size minimum of MIN_DUNGEON_SIZE
-        DungeonRunner.map = new DungeonMap(Math.max(GameConstants.MIN_DUNGEON_SIZE, dungeonSize), flash);
+        DungeonRunner.map = new DungeonMap(Math.max(GameConstants.MIN_DUNGEON_SIZE, dungeonSize), generateChestLoot, flash);
 
         DungeonRunner.chestsOpened(0);
         DungeonRunner.encountersWon(0);
@@ -56,48 +70,51 @@ class DungeonRunner {
         });
         DungeonRunner.fightingLootEnemy = false;
         DungeonRunner.fightingBoss(false);
-        DungeonRunner.defeatedBoss(false);
+        DungeonRunner.defeatedBoss(null);
         DungeonRunner.dungeonFinished(false);
         App.game.gameState = GameConstants.GameState.dungeon;
     }
 
     public static tick() {
-        if (this.timeLeft() <= 0) {
-            if (this.defeatedBoss()) {
-                this.dungeonWon();
+        if (DungeonRunner.timeLeft() <= 0) {
+            if (DungeonRunner.defeatedBoss()) {
+                DungeonRunner.dungeonWon();
             } else {
-                this.dungeonLost();
+                DungeonRunner.dungeonLost();
             }
         }
-        if (this.map.playerMoved()) {
-            this.timeLeft(this.timeLeft() - GameConstants.DUNGEON_TICK);
-            this.timeLeftPercentage(Math.floor(this.timeLeft() / (GameConstants.DUNGEON_TIME * FluteEffectRunner.getFluteMultiplier(GameConstants.FluteItemType.Time_Flute)) * 100));
+        if (DungeonRunner.map.playerMoved()) {
+            DungeonRunner.timeLeft(DungeonRunner.timeLeft() - GameConstants.DUNGEON_TICK);
+            DungeonRunner.timeLeftPercentage(Math.floor(DungeonRunner.timeLeft() / (GameConstants.DUNGEON_TIME * FluteEffectRunner.getFluteMultiplier(GameConstants.FluteItemType.Time_Flute)) * 100));
+            if (DungeonRunner.continuousInteractionInput) {
+                DungeonRunner.handleInteraction(GameConstants.DungeonInteractionSource.HeldKeybind);
+            }
         }
         const currentFluteBonus = FluteEffectRunner.getFluteMultiplier(GameConstants.FluteItemType.Time_Flute);
-        if (currentFluteBonus != this.timeBonus()) {
-            if (currentFluteBonus > this.timeBonus()) {
-                if (this.timeBonus() === 1) {
-                    this.timeBonus(currentFluteBonus);
-                    this.timeLeft(this.timeLeft() * this.timeBonus());
+        if (currentFluteBonus != DungeonRunner.timeBonus()) {
+            if (currentFluteBonus > DungeonRunner.timeBonus()) {
+                if (DungeonRunner.timeBonus() === 1) {
+                    DungeonRunner.timeBonus(currentFluteBonus);
+                    DungeonRunner.timeLeft(DungeonRunner.timeLeft() * DungeonRunner.timeBonus());
                 } else {
-                    this.timeLeft(this.timeLeft() / this.timeBonus());
-                    this.timeBonus(currentFluteBonus);
-                    this.timeLeft(this.timeLeft() * this.timeBonus());
+                    DungeonRunner.timeLeft(DungeonRunner.timeLeft() / DungeonRunner.timeBonus());
+                    DungeonRunner.timeBonus(currentFluteBonus);
+                    DungeonRunner.timeLeft(DungeonRunner.timeLeft() * DungeonRunner.timeBonus());
                 }
             } else {
-                this.timeLeft(this.timeLeft() / this.timeBonus());
-                this.timeBonus(currentFluteBonus);
+                DungeonRunner.timeLeft(DungeonRunner.timeLeft() / DungeonRunner.timeBonus());
+                DungeonRunner.timeBonus(currentFluteBonus);
             }
         }
     }
 
     /**
-     * Handles the click event in the dungeon view
+     * Handles the interaction event in the dungeon view and from keybinds
      */
-    public static handleClick() {
-        if (DungeonRunner.fighting() && !DungeonBattle.catching()) {
+    public static handleInteraction(source: GameConstants.DungeonInteractionSource = GameConstants.DungeonInteractionSource.Click) {
+        if (DungeonRunner.fighting() && !DungeonBattle.catching() && source === GameConstants.DungeonInteractionSource.Click) {
             DungeonBattle.clickAttack();
-        } else if (DungeonRunner.map.currentTile().type() === GameConstants.DungeonTile.entrance) {
+        } else if (DungeonRunner.map.currentTile().type() === GameConstants.DungeonTile.entrance && source !== GameConstants.DungeonInteractionSource.HeldKeybind) {
             DungeonRunner.dungeonLeave();
         } else if (DungeonRunner.map.currentTile().type() === GameConstants.DungeonTile.chest) {
             DungeonRunner.openChest();
@@ -109,22 +126,15 @@ class DungeonRunner {
     }
 
     public static openChest() {
-        if (DungeonRunner.map.currentTile().type() !== GameConstants.DungeonTile.chest) {
+        const tile = DungeonRunner.map.currentTile();
+        if (tile.type() !== GameConstants.DungeonTile.chest) {
             return;
         }
 
         GameHelper.incrementObservable(DungeonRunner.chestsOpened);
         DungeonRunner.chestsOpenedPerFloor[DungeonRunner.map.playerPosition().floor]++;
 
-        const clears = App.game.statistics.dungeonsCleared[GameConstants.getDungeonIndex(DungeonRunner.dungeon.name)]();
-        const debuffed = (DungeonRunner.dungeon.optionalParameters?.dungeonRegionalDifficulty ?? GameConstants.getDungeonRegion(DungeonRunner.dungeon.name)) < player.highestRegion() - 2;
-        // Ignores debuff on first attempt to get loot that ignores debuff.
-        let tier = DungeonRunner.dungeon.getRandomLootTier(clears);
-        let loot = DungeonRunner.dungeon.getRandomLoot(tier);
-        if (!loot.ignoreDebuff && debuffed) {
-            tier = DungeonRunner.dungeon.getRandomLootTier(clears, debuffed);
-            loot = DungeonRunner.dungeon.getRandomLoot(tier, true);
-        }
+        const { tier, loot } = (tile as DungeonTile<GameConstants.DungeonTile.chest>).metadata;
 
         let amount = loot.amount || 1;
 
@@ -172,9 +182,12 @@ class DungeonRunner {
             DungeonRunner.lootNotification(input, amount, weight, image);
             DungeonRunner.fightingLootEnemy = true;
             return DungeonBattle.generateNewLootEnemy(input);
+        } else if (ItemList[input] instanceof MegaStoneItem) {
+            DungeonRunner.lootNotification(input, amount, weight, ItemList[input].image);
+            ItemList[input].gain(1);
         } else if (ItemList[input] instanceof EvolutionStone || EggItem || BattleItem || Vitamin || EnergyRestore) {
             if (ItemList[input] instanceof Vitamin) {
-                GameHelper.incrementObservable(App.game.statistics.totalProteinsObtained, amount);
+                GameHelper.incrementObservable(App.game.statistics.totalVitaminsObtained, amount);
             }
             DungeonRunner.lootNotification(input, amount, weight, ItemList[input].image);
             return player.gainItem(ItemList[input].name, amount);
@@ -185,16 +198,14 @@ class DungeonRunner {
     }
 
     public static lootNotification(input, amount, weight, image) {
-        const multiple = (amount < 2) ? '' : 's';
-        let message = `Found ${amount} × <img src="${image}" height="24px"/> ${GameConstants.camelCaseToString(GameConstants.humanifyString(input))}${multiple} in a dungeon chest.`;
+        let message = `Found ${amount} × <img src="${image}" height="24px"/> ${GameConstants.pluralizeString(GameConstants.camelCaseToString(GameConstants.humanifyString(input)), amount)} in a dungeon chest.`;
         let type = NotificationConstants.NotificationOption.success;
         let setting = NotificationConstants.NotificationSetting.Dungeons.common_dungeon_item_found;
 
         if (typeof BerryType[input] == 'number') {
-            const berryPlural = (amount === 1) ? 'Berry' : 'Berries';
-            message = `Found ${Math.floor(amount)} × <img src="${image}" height="24px"/> ${GameConstants.humanifyString(input)} ${berryPlural} in a dungeon chest.`;
+            message = `Found ${Math.floor(amount)} × <img src="${image}" height="24px"/> ${GameConstants.humanifyString(input)} ${GameConstants.pluralizeString('Berry', amount)} in a dungeon chest.`;
         } if (ItemList[input] instanceof PokeballItem) {
-            message = `Found ${amount} × <img src="${image}" height ="24px"/> ${ItemList[input].displayName}${multiple} in a dungeon chest.`;
+            message = `Found ${amount} × <img src="${image}" height ="24px"/> ${GameConstants.pluralizeString(ItemList[input].displayName, amount)} in a dungeon chest.`;
         } else if (PokemonHelper.getPokemonByName(input).name != 'MissingNo.') {
             message = `Encountered ${GameHelper.anOrA(input)} <img src="${image}" height="40px"/> ${GameConstants.humanifyString(input)} in a dungeon chest.`;
         }
@@ -299,17 +310,25 @@ class DungeonRunner {
         });
     }
 
-    public static isThereQuestAtLocation(dungeon: Dungeon) {
-        return App.game.quests.currentQuests().some(q => {
-            return q instanceof DefeatDungeonQuest && q.dungeon == dungeon.name;
-        });
-    }
-
     public static hasEnoughTokens() {
         return App.game.wallet.hasAmount(new Amount(DungeonRunner.dungeon.tokenCost, GameConstants.Currency.dungeonToken));
     }
 
     public static dungeonLevel(): number {
-        return PokemonFactory.routeLevel(this.dungeon.difficultyRoute, player.region);
+        return PokemonFactory.routeLevel(DungeonRunner.dungeon.difficultyRoute, player.region);
+    }
+
+    public static getFlash(dungeonName): DungeonFlash | undefined {
+        const clears = App.game.statistics.dungeonsCleared[GameConstants.getDungeonIndex(dungeonName)]();
+
+        const config = [
+            { flash: DungeonFlash.tiers[0], clearsNeeded: 100 },
+            { flash: DungeonFlash.tiers[1], clearsNeeded: 250 },
+            { flash: DungeonFlash.tiers[2], clearsNeeded: 400 },
+        ].reverse();
+
+        // findIndex, so we can get next tier when light ball is implemented
+        const index = config.findIndex((tier) => tier.clearsNeeded <= clears);
+        return config[index]?.flash;
     }
 }

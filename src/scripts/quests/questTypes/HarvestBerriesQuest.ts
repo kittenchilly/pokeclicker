@@ -16,7 +16,7 @@ class HarvestBerriesQuest extends Quest implements QuestInterface {
 
     public static generateData(): any[] {
         // Getting available Berries (always include Gen 1 Berries)
-        const availableBerries = App.game.farming.berryData.filter(berry => App.game.farming.unlockedBerries[berry.type]() || berry.type < BerryType.Persim);
+        const availableBerries = App.game.farming.berryData.filter(berry => (App.game.farming.unlockedBerries[berry.type]() && berry.growthTime[3] < 12000) || berry.type < BerryType.Persim);
         const berry = SeededRand.fromArray(availableBerries);
 
         const maxAmt = Math.min(300, Math.ceil(432000 / berry.growthTime[3]));
@@ -29,16 +29,15 @@ class HarvestBerriesQuest extends Quest implements QuestInterface {
 
     private static calcReward(amount: number, berryType: BerryType): number {
         const harvestTime = App.game.farming.berryData[berryType].growthTime[3];
-        const harvestAmt = Math.max(4, Math.ceil(App.game.farming.berryData[berryType].harvestAmount));
+        const harvestAmt = Math.max(4, Math.ceil(App.game.farming.berryData[berryType].harvestAmount / 2));
         const plantAmt = amount / harvestAmt;
         const fieldAmt = plantAmt / App.game.farming.plotList.length;
-        const reward = Math.ceil(fieldAmt * Math.pow(harvestTime, .7) * 10);
+        const reward = Math.ceil(fieldAmt * Math.pow(harvestTime, .7) * 30);
         return super.randomizeReward(reward);
     }
 
     get description(): string {
-        const berryPlural = (this.amount === 1) ? 'Berry' : 'Berries';
-        return `Harvest ${this.amount.toLocaleString('en-US')} ${BerryType[this.berryType]} ${berryPlural} at the farm.`;
+        return this.customDescription ?? `Harvest ${this.amount.toLocaleString('en-US')} ${BerryType[this.berryType]} ${GameConstants.pluralizeString('Berry', this.amount)} at the farm.`;
     }
 
     toJSON() {
